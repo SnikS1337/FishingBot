@@ -1,0 +1,9 @@
+.tmp/
+.opencode/
+
+**/bin/
+**/obj/
+
+.vs/
+.idea/
+.vscode/

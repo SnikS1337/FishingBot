@@ -1,0 +1,33 @@
+{
+  "resolution": { "w": 2560, "h": 1440 },
+  "fishing": {
+    "action": "RELEASE",
+    "autoRecast": true,
+    "recastDelayMs": [1000, 3000]
+  },
+  "hotkeys": {
+    "panic": "F10",
+    "pause": "F9"
+  },
+  "timing": {
+    "startPromptCheckIntervalMs": 50,
+    "tensionCheckIntervalMs": 50,
+    "fightCheckIntervalMs": 50,
+    "actionDelayMin": 80,
+    "actionDelayMax": 200
+  },
+  "regions": {
+    "startPrompt": { "x": 0.01, "y": 0.01, "w": 0.35, "h": 0.12 },
+    "tensionWidget": { "x": 0.69, "y": 0.67, "w": 0.20, "h": 0.26 },
+    "fightBar": { "x": 0.30, "y": 0.78, "w": 0.45, "h": 0.16 },
+    "catchMenu": { "x": 0.35, "y": 0.20, "w": 0.32, "h": 0.58 }
+  },
+  "detection": {
+    "startPromptThreshold": 0.80,
+    "startPromptConfirmFrames": 2,
+    "biteThreshold": 0.75,
+    "biteConfirmFrames": 2,
+    "catchMenuThreshold": 0.80,
+    "catchMenuConfirmFrames": 2
+  }
+}
