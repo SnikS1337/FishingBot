@@ -6,25 +6,29 @@ namespace FishingBot.Core.Vision;
 public sealed class VisionPipeline : IVisionPipeline
 {
     private readonly StartPromptDetector _startPromptDetector;
+    private readonly AimDetector _aimDetector;
     private readonly TensionDetector _tensionDetector;
     private readonly FightDetector _fightDetector;
     private readonly CatchMenuDetector _catchMenuDetector;
 
     public VisionPipeline(
         StartPromptDetector startPromptDetector,
+        AimDetector aimDetector,
         TensionDetector tensionDetector,
         FightDetector fightDetector,
         CatchMenuDetector catchMenuDetector)
     {
         _startPromptDetector = startPromptDetector;
+        _aimDetector = aimDetector;
         _tensionDetector = tensionDetector;
         _fightDetector = fightDetector;
         _catchMenuDetector = catchMenuDetector;
     }
 
-    public VisionSnapshot Analyze(Mat startPromptRoi, Mat tensionRoi, Mat fightRoi, Mat catchMenuRoi)
+    public VisionSnapshot Analyze(Mat startPromptRoi, Mat aimRoi, Mat tensionRoi, Mat fightRoi, Mat catchMenuRoi)
     {
         var start = _startPromptDetector.Detect(startPromptRoi);
+        var aim = _aimDetector.Detect(aimRoi);
         var bite = _tensionDetector.Detect(tensionRoi);
         var fight = _fightDetector.Detect(fightRoi);
         var menu = _catchMenuDetector.Detect(catchMenuRoi);
@@ -32,6 +36,8 @@ public sealed class VisionPipeline : IVisionPipeline
         return new VisionSnapshot(
             StartPromptDetected: start.IsDetected,
             StartPromptConfidence: start.Confidence,
+            AimAligned: aim.IsDetected,
+            AimConfidence: aim.Confidence,
             BiteDetected: bite.IsDetected,
             BiteConfidence: bite.Confidence,
             FightDetected: fight.IsDetected,

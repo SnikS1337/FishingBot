@@ -76,6 +76,7 @@ public partial class MainWindow : Window
     {
         None,
         StartPrompt,
+        AimBar,
         Tension,
         Fight,
         CatchMenu
@@ -199,6 +200,7 @@ public partial class MainWindow : Window
         }
 
         UpdateRegionVisuals(GetRegion(RoiRegion.StartPrompt), StartPromptRect, StartPromptHandle, StartPromptLabel);
+        UpdateRegionVisuals(GetRegion(RoiRegion.AimBar), AimBarRect, AimBarHandle, AimBarLabel);
         UpdateRegionVisuals(GetRegion(RoiRegion.Tension), TensionRect, TensionHandle, TensionLabel);
         UpdateRegionVisuals(GetRegion(RoiRegion.Fight), FightRect, FightHandle, FightLabel);
         UpdateRegionVisuals(GetRegion(RoiRegion.CatchMenu), CatchMenuRect, CatchMenuHandle, CatchMenuLabel);
@@ -222,7 +224,7 @@ public partial class MainWindow : Window
 
     private bool TryHitRegion(Point point, out RoiRegion region, out DragMode dragMode)
     {
-        foreach (var candidate in new[] { RoiRegion.CatchMenu, RoiRegion.Fight, RoiRegion.Tension, RoiRegion.StartPrompt })
+        foreach (var candidate in new[] { RoiRegion.CatchMenu, RoiRegion.Fight, RoiRegion.Tension, RoiRegion.AimBar, RoiRegion.StartPrompt })
         {
             var rect = ToCanvasRect(GetRegion(candidate));
             if (!rect.Contains(point))
@@ -285,6 +287,7 @@ public partial class MainWindow : Window
         return region switch
         {
             RoiRegion.StartPrompt => new NormalizedRect(calibration.StartPromptX, calibration.StartPromptY, calibration.StartPromptW, calibration.StartPromptH),
+            RoiRegion.AimBar => new NormalizedRect(calibration.AimBarX, calibration.AimBarY, calibration.AimBarW, calibration.AimBarH),
             RoiRegion.Tension => new NormalizedRect(calibration.TensionWidgetX, calibration.TensionWidgetY, calibration.TensionWidgetW, calibration.TensionWidgetH),
             RoiRegion.Fight => new NormalizedRect(calibration.FightBarX, calibration.FightBarY, calibration.FightBarW, calibration.FightBarH),
             RoiRegion.CatchMenu => new NormalizedRect(calibration.CatchMenuX, calibration.CatchMenuY, calibration.CatchMenuW, calibration.CatchMenuH),
@@ -309,6 +312,12 @@ public partial class MainWindow : Window
                 calibration.TensionWidgetY = value.Y;
                 calibration.TensionWidgetW = value.W;
                 calibration.TensionWidgetH = value.H;
+                break;
+            case RoiRegion.AimBar:
+                calibration.AimBarX = value.X;
+                calibration.AimBarY = value.Y;
+                calibration.AimBarW = value.W;
+                calibration.AimBarH = value.H;
                 break;
             case RoiRegion.Fight:
                 calibration.FightBarX = value.X;

@@ -55,6 +55,8 @@ public sealed class RegionsConfig
 {
     public NormalizedRect StartPrompt { get; set; } = new(0.01, 0.01, 0.35, 0.12);
 
+    public NormalizedRect AimBar { get; set; } = new(0.30, 0.78, 0.45, 0.10);
+
     public NormalizedRect TensionWidget { get; set; } = new(0.69, 0.67, 0.20, 0.26);
 
     public NormalizedRect FightBar { get; set; } = new(0.30, 0.78, 0.45, 0.16);

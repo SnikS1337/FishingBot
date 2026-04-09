@@ -37,6 +37,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private double _startPromptConfidence;
     private bool _biteDetected;
     private double _biteConfidence;
+    private bool _aimAligned;
+    private double _aimConfidence;
     private bool _fightDetected;
     private int _fightMarkerX = -1;
     private bool _catchMenuDetected;
@@ -130,6 +132,18 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _biteDetected;
         private set => SetProperty(ref _biteDetected, value);
+    }
+
+    public bool AimAligned
+    {
+        get => _aimAligned;
+        private set => SetProperty(ref _aimAligned, value);
+    }
+
+    public double AimConfidence
+    {
+        get => _aimConfidence;
+        private set => SetProperty(ref _aimConfidence, value);
     }
 
     public double BiteConfidence
@@ -359,6 +373,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             var capture = new DxgiCaptureEngine();
             var vision = new VisionPipeline(
                 new StartPromptDetector(),
+                new AimDetector(),
                 new TensionDetector(),
                 new FightDetector(),
                 new CatchMenuDetector(
@@ -430,6 +445,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             StartPromptConfidence = Math.Round(snapshot.StartPromptConfidence, 3);
             BiteDetected = snapshot.BiteDetected;
             BiteConfidence = Math.Round(snapshot.BiteConfidence, 3);
+            AimAligned = snapshot.AimAligned;
+            AimConfidence = Math.Round(snapshot.AimConfidence, 3);
             FightDetected = snapshot.FightDetected;
             FightMarkerX = snapshot.FightMarkerX;
             CatchMenuDetected = snapshot.CatchMenuDetected;

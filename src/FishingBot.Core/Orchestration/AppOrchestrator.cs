@@ -31,6 +31,7 @@ public sealed class AppOrchestrator : IDisposable
 
     private DateTimeOffset _stateEnteredUtc;
     private int _previousFightMarkerX;
+    private int _lastFightDirection;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -53,6 +54,7 @@ public sealed class AppOrchestrator : IDisposable
         _stateEnteredUtc = DateTimeOffset.UtcNow;
         _entryActionPending = true;
         _previousFightMarkerX = -1;
+        _lastFightDirection = 0;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -142,6 +144,7 @@ public sealed class AppOrchestrator : IDisposable
             _stateEnteredUtc = DateTimeOffset.UtcNow;
             _entryActionPending = true;
             _previousFightMarkerX = -1;
+            _lastFightDirection = 0;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -184,11 +187,12 @@ public sealed class AppOrchestrator : IDisposable
         using (frame)
         {
             using var startPromptRoi = Crop(frame.BgrFrame, _config.Regions.StartPrompt);
+            using var aimRoi = Crop(frame.BgrFrame, _config.Regions.AimBar);
             using var tensionRoi = Crop(frame.BgrFrame, _config.Regions.TensionWidget);
             using var fightRoi = Crop(frame.BgrFrame, _config.Regions.FightBar);
             using var catchMenuRoi = Crop(frame.BgrFrame, _config.Regions.CatchMenu);
 
-            var snapshot = _visionPipeline.Analyze(startPromptRoi, tensionRoi, fightRoi, catchMenuRoi);
+            var snapshot = _visionPipeline.Analyze(startPromptRoi, aimRoi, tensionRoi, fightRoi, catchMenuRoi);
             SnapshotUpdated?.Invoke(snapshot);
 
             PublishPreviewFrame(frame.BgrFrame, snapshot);
@@ -223,10 +227,6 @@ public sealed class AppOrchestrator : IDisposable
         {
             case FishingState.WaitStartPrompt when snapshot.StartPromptDetected:
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
-                break;
-
-            case FishingState.WaitBite when snapshot.BiteDetected:
-                ApplyEvent(FishingEvent.BiteDetected, "bite detected");
                 break;
 
             case FishingState.Fight when snapshot.CatchMenuDetected:
@@ -265,6 +265,14 @@ public sealed class AppOrchestrator : IDisposable
 
                     ApplyEvent(FishingEvent.HookDone, "hook action done");
                 });
+                break;
+
+            case FishingState.WaitBite:
+                // Первый этап цикла: ловим попадание в зеленую зону.
+                if (snapshot.AimAligned)
+                {
+                    ApplyEvent(FishingEvent.BiteDetected, "aim aligned in green zone");
+                }
                 break;
 
             case FishingState.Fight:
@@ -317,9 +325,19 @@ public sealed class AppOrchestrator : IDisposable
             var delta = snapshot.FightMarkerX - _previousFightMarkerX;
             if (delta > 0)
             {
+                _lastFightDirection = 1;
                 _inputEngine.HoldA();
             }
             else if (delta < 0)
+            {
+                _lastFightDirection = -1;
+                _inputEngine.HoldD();
+            }
+            else if (_lastFightDirection > 0)
+            {
+                _inputEngine.HoldA();
+            }
+            else if (_lastFightDirection < 0)
             {
                 _inputEngine.HoldD();
             }
@@ -353,6 +371,7 @@ public sealed class AppOrchestrator : IDisposable
         _stateEnteredUtc = DateTimeOffset.UtcNow;
         _entryActionPending = true;
         _previousFightMarkerX = -1;
+        _lastFightDirection = 0;
 
         Log("INFO", "STATE_CHANGE", $"{before} -> {after} ({reason})");
         StateChanged?.Invoke(after);
@@ -428,12 +447,13 @@ public sealed class AppOrchestrator : IDisposable
     private void DrawDebugOverlays(Mat frame, VisionSnapshot snapshot)
     {
         DrawRegion(frame, _config.Regions.StartPrompt, Scalar.Aqua, "StartPrompt");
+        DrawRegion(frame, _config.Regions.AimBar, Scalar.GreenYellow, "AimBar");
         DrawRegion(frame, _config.Regions.TensionWidget, Scalar.Orange, "Tension");
         DrawRegion(frame, _config.Regions.FightBar, Scalar.Yellow, "FightBar");
         DrawRegion(frame, _config.Regions.CatchMenu, Scalar.LightGreen, "CatchMenu");
 
         var markerText = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
-        var status = $"State: {_fsm.Current} | Start:{snapshot.StartPromptDetected} Bite:{snapshot.BiteDetected} Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
+        var status = $"State: {_fsm.Current} | Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned} Bite:{snapshot.BiteDetected} Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
         Cv2.PutText(
             frame,
             status,

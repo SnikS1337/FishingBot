@@ -66,6 +66,15 @@
                             </UniformGrid>
                         </GroupBox>
 
+                        <GroupBox Header="AimBar" Margin="0,0,0,8">
+                            <UniformGrid Columns="2" Margin="8">
+                                <TextBlock Text="X" /><TextBox Text="{Binding Calibration.AimBarX, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Y" /><TextBox Text="{Binding Calibration.AimBarY, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="W" /><TextBox Text="{Binding Calibration.AimBarW, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="H" /><TextBox Text="{Binding Calibration.AimBarH, UpdateSourceTrigger=PropertyChanged}" />
+                            </UniformGrid>
+                        </GroupBox>
+
                         <GroupBox Header="TensionWidget" Margin="0,0,0,8">
                             <UniformGrid Columns="2" Margin="8">
                                 <TextBlock Text="X" /><TextBox Text="{Binding Calibration.TensionWidgetX, UpdateSourceTrigger=PropertyChanged}" />
@@ -118,6 +127,8 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Status" FontWeight="SemiBold" />
@@ -141,20 +152,26 @@
                         <TextBlock Grid.Row="6" Grid.Column="0" Text="Bite / conf" FontWeight="SemiBold" />
                         <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding BiteDetected}" />
 
-                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Bite conf" FontWeight="SemiBold" />
-                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding BiteConfidence}" />
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Aim aligned" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding AimAligned}" />
 
-                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Fight marker X" FontWeight="SemiBold" />
-                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding FightMarkerX}" />
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Aim conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding AimConfidence}" />
 
-                        <TextBlock Grid.Row="9" Grid.Column="0" Text="CatchMenu / conf" FontWeight="SemiBold" />
-                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding CatchMenuDetected}" />
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="Bite conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding BiteConfidence}" />
 
-                        <TextBlock Grid.Row="10" Grid.Column="0" Text="CatchMenu conf" FontWeight="SemiBold" />
-                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding CatchMenuConfidence}" />
+                        <TextBlock Grid.Row="10" Grid.Column="0" Text="Fight marker X" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding FightMarkerX}" />
 
-                        <TextBlock Grid.Row="11" Grid.Column="0" Text="FPS (cap/vision)" FontWeight="SemiBold" />
-                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding CaptureFps}" />
+                        <TextBlock Grid.Row="11" Grid.Column="0" Text="CatchMenu / conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding CatchMenuDetected}" />
+
+                        <TextBlock Grid.Row="12" Grid.Column="0" Text="CatchMenu conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="12" Grid.Column="1" Text="{Binding CatchMenuConfidence}" />
+
+                        <TextBlock Grid.Row="13" Grid.Column="0" Text="FPS (cap/vision)" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="13" Grid.Column="1" Text="{Binding CaptureFps}" />
                     </Grid>
                 </StackPanel>
             </Border>
@@ -177,16 +194,19 @@
                                     MouseMove="RoiCanvas_MouseMove"
                                     MouseLeftButtonUp="RoiCanvas_MouseLeftButtonUp">
                                 <Rectangle x:Name="StartPromptRect" Stroke="#00D1FF" StrokeThickness="2" Fill="#2200D1FF" />
+                                <Rectangle x:Name="AimBarRect" Stroke="#7CFF00" StrokeThickness="2" Fill="#227CFF00" />
                                 <Rectangle x:Name="TensionRect" Stroke="#FF9800" StrokeThickness="2" Fill="#22FF9800" />
                                 <Rectangle x:Name="FightRect" Stroke="#F5E663" StrokeThickness="2" Fill="#22F5E663" />
                                 <Rectangle x:Name="CatchMenuRect" Stroke="#5AF78E" StrokeThickness="2" Fill="#225AF78E" />
 
                                 <Rectangle x:Name="StartPromptHandle" Width="10" Height="10" Fill="#00D1FF" />
+                                <Rectangle x:Name="AimBarHandle" Width="10" Height="10" Fill="#7CFF00" />
                                 <Rectangle x:Name="TensionHandle" Width="10" Height="10" Fill="#FF9800" />
                                 <Rectangle x:Name="FightHandle" Width="10" Height="10" Fill="#F5E663" />
                                 <Rectangle x:Name="CatchMenuHandle" Width="10" Height="10" Fill="#5AF78E" />
 
                                 <TextBlock x:Name="StartPromptLabel" Text="StartPrompt" Foreground="#00D1FF" FontWeight="Bold" FontSize="11" />
+                                <TextBlock x:Name="AimBarLabel" Text="AimBar" Foreground="#7CFF00" FontWeight="Bold" FontSize="11" />
                                 <TextBlock x:Name="TensionLabel" Text="Tension" Foreground="#FF9800" FontWeight="Bold" FontSize="11" />
                                 <TextBlock x:Name="FightLabel" Text="Fight" Foreground="#F5E663" FontWeight="Bold" FontSize="11" />
                                 <TextBlock x:Name="CatchMenuLabel" Text="CatchMenu" Foreground="#5AF78E" FontWeight="Bold" FontSize="11" />

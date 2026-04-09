@@ -12,6 +12,10 @@ public sealed class CalibrationViewModel : INotifyPropertyChanged
     private double _startPromptY;
     private double _startPromptW;
     private double _startPromptH;
+    private double _aimBarX;
+    private double _aimBarY;
+    private double _aimBarW;
+    private double _aimBarH;
     private double _tensionWidgetX;
     private double _tensionWidgetY;
     private double _tensionWidgetW;
@@ -31,6 +35,11 @@ public sealed class CalibrationViewModel : INotifyPropertyChanged
     public double StartPromptY { get => _startPromptY; set => SetProperty(ref _startPromptY, value); }
     public double StartPromptW { get => _startPromptW; set => SetProperty(ref _startPromptW, value); }
     public double StartPromptH { get => _startPromptH; set => SetProperty(ref _startPromptH, value); }
+
+    public double AimBarX { get => _aimBarX; set => SetProperty(ref _aimBarX, value); }
+    public double AimBarY { get => _aimBarY; set => SetProperty(ref _aimBarY, value); }
+    public double AimBarW { get => _aimBarW; set => SetProperty(ref _aimBarW, value); }
+    public double AimBarH { get => _aimBarH; set => SetProperty(ref _aimBarH, value); }
 
     public double TensionWidgetX { get => _tensionWidgetX; set => SetProperty(ref _tensionWidgetX, value); }
     public double TensionWidgetY { get => _tensionWidgetY; set => SetProperty(ref _tensionWidgetY, value); }
@@ -54,6 +63,11 @@ public sealed class CalibrationViewModel : INotifyPropertyChanged
         StartPromptW = config.Regions.StartPrompt.W;
         StartPromptH = config.Regions.StartPrompt.H;
 
+        AimBarX = config.Regions.AimBar.X;
+        AimBarY = config.Regions.AimBar.Y;
+        AimBarW = config.Regions.AimBar.W;
+        AimBarH = config.Regions.AimBar.H;
+
         TensionWidgetX = config.Regions.TensionWidget.X;
         TensionWidgetY = config.Regions.TensionWidget.Y;
         TensionWidgetW = config.Regions.TensionWidget.W;
@@ -73,6 +87,7 @@ public sealed class CalibrationViewModel : INotifyPropertyChanged
     public void ApplyTo(BotConfig config)
     {
         config.Regions.StartPrompt = BuildRect(StartPromptX, StartPromptY, StartPromptW, StartPromptH);
+        config.Regions.AimBar = BuildRect(AimBarX, AimBarY, AimBarW, AimBarH);
         config.Regions.TensionWidget = BuildRect(TensionWidgetX, TensionWidgetY, TensionWidgetW, TensionWidgetH);
         config.Regions.FightBar = BuildRect(FightBarX, FightBarY, FightBarW, FightBarH);
         config.Regions.CatchMenu = BuildRect(CatchMenuX, CatchMenuY, CatchMenuW, CatchMenuH);
