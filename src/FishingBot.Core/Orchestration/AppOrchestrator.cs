@@ -229,6 +229,10 @@ public sealed class AppOrchestrator : IDisposable
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
                 break;
 
+            case FishingState.WaitBite when snapshot.BiteDetected:
+                ApplyEvent(FishingEvent.BiteDetected, "tension red detected");
+                break;
+
             case FishingState.Fight when snapshot.CatchMenuDetected:
                 ApplyEvent(FishingEvent.CatchMenuDetected, "catch menu detected");
                 break;
@@ -246,11 +250,22 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressE();
-                        Log("INFO", "PRESS_E", "Pressed E to start fishing.");
+                        Log("INFO", "PRESS_E", "Entered fishing mode by E.");
+                    }
+                });
+
+                // Этап прицеливания после старта: ловим зеленую зону и подтверждаем пробелом.
+                if (snapshot.AimAligned)
+                {
+                    if (CanAct())
+                    {
+                        RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
+                        _inputEngine.PressSpace();
+                        Log("INFO", "AIM_SPACE", "Aim aligned, pressed Space.");
                     }
 
-                    ApplyEvent(FishingEvent.StartFishingDone, "start fishing action done");
-                });
+                    ApplyEvent(FishingEvent.StartFishingDone, "aim aligned and cast confirmed");
+                }
                 break;
 
             case FishingState.Hook:
@@ -265,14 +280,6 @@ public sealed class AppOrchestrator : IDisposable
 
                     ApplyEvent(FishingEvent.HookDone, "hook action done");
                 });
-                break;
-
-            case FishingState.WaitBite:
-                // Первый этап цикла: ловим попадание в зеленую зону.
-                if (snapshot.AimAligned)
-                {
-                    ApplyEvent(FishingEvent.BiteDetected, "aim aligned in green zone");
-                }
                 break;
 
             case FishingState.Fight:
