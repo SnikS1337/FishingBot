@@ -19,6 +19,9 @@ internal static class SendInputNative
     [DllImport("user32.dll", SetLastError = true)]
     internal static extern bool SetCursorPos(int x, int y);
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool GetCursorPos(out NativePoint lpPoint);
+
     internal static void KeyDown(ushort scanCode)
     {
         var inputs = new[]
@@ -98,6 +101,13 @@ internal static class SendInputNative
         _ = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
     }
 
+    internal static System.Drawing.Point GetCursorPosition()
+    {
+        return GetCursorPos(out var point)
+            ? new System.Drawing.Point(point.X, point.Y)
+            : new System.Drawing.Point(0, 0);
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct INPUT
     {
@@ -134,5 +144,12 @@ internal static class SendInputNative
         public uint dwFlags;
         public uint time;
         public nint dwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
     }
 }

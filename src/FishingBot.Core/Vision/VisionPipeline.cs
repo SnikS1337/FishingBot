@@ -1,8 +1,9 @@
+using FishingBot.Core.Contracts;
 using OpenCvSharp;
 
 namespace FishingBot.Core.Vision;
 
-public sealed class VisionPipeline
+public sealed class VisionPipeline : IVisionPipeline
 {
     private readonly StartPromptDetector _startPromptDetector;
     private readonly TensionDetector _tensionDetector;

@@ -1,8 +1,9 @@
 using System.Drawing;
+using FishingBot.Core.Contracts;
 
 namespace FishingBot.Core.Input;
 
-public sealed class InputEngine
+public sealed class InputEngine : IInputEngine
 {
     private readonly BezierMouseMover _mouseMover;
     private readonly Random _random;
@@ -82,9 +83,10 @@ public sealed class InputEngine
         SendInputNative.KeyUp(ScanCodes.Space);
     }
 
-    public void ClickAt(Point from, Point to)
+    public void ClickAt(Point target)
     {
-        _mouseMover.MoveMouse(from, to);
+        var from = SendInputNative.GetCursorPosition();
+        _mouseMover.MoveMouse(from, target);
         Thread.Sleep(_random.Next(80, 200));
         SendInputNative.LeftClick();
     }

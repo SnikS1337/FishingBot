@@ -1,26 +1,190 @@
 <Window x:Class="FishingBot.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="FishingBot" Height="720" Width="1200"
+        Title="FishingBot Control Panel"
+        Height="860"
+        Width="1450"
         WindowStartupLocation="CenterScreen">
-    <Grid Margin="16">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-            <Button Content="Start DetectOnly" Width="140" Margin="0,0,8,0" />
-            <Button Content="Start Active" Width="120" Margin="0,0,8,0" />
-            <Button Content="Pause" Width="90" Margin="0,0,8,0" />
-            <Button Content="Stop" Width="90" />
-        </StackPanel>
+        <Border Grid.Row="0" BorderThickness="1" BorderBrush="#555" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="1" BorderThickness="1" BorderBrush="#666" CornerRadius="8" Padding="12">
-            <TextBlock Text="MVP GUI scaffold готов. Логика будет добавлена в следующих задачах."
-                       VerticalAlignment="Center"
-                       HorizontalAlignment="Center"
-                       FontSize="16" />
+                <Button Grid.Column="0" Content="Start DetectOnly" Command="{Binding StartDetectOnlyCommand}" Width="140" Margin="0,0,8,0" />
+                <Button Grid.Column="1" Content="Start Active" Command="{Binding StartActiveCommand}" Width="110" Margin="0,0,8,0" />
+                <Button Grid.Column="2" Content="{Binding PauseResumeText}" Command="{Binding PauseResumeCommand}" Width="90" Margin="0,0,8,0" />
+                <Button Grid.Column="3" Content="Stop" Command="{Binding StopCommand}" Width="80" Margin="0,0,16,0" />
+
+                <ComboBox Grid.Column="4"
+                          Width="110"
+                          ItemsSource="{Binding FishActions}"
+                          SelectedItem="{Binding SelectedFishAction}"
+                          Margin="0,0,8,0" />
+
+                <Button Grid.Column="5" Content="Save Config" Command="{Binding SaveConfigCommand}" Width="100" Margin="0,0,8,0" />
+                <Button Grid.Column="6" Content="Reload Config" Command="{Binding ReloadConfigCommand}" Width="105" Margin="0,0,8,0" HorizontalAlignment="Left" />
+                <Button Grid.Column="7" Content="Test A" Command="{Binding TestACommand}" Width="70" Margin="0,0,8,0" />
+                <Button Grid.Column="8" Content="Test D" Command="{Binding TestDCommand}" Width="70" Margin="0,0,8,0" />
+                <Button Grid.Column="9" Content="Test Space" Command="{Binding TestSpaceCommand}" Width="95" HorizontalAlignment="Left" />
+            </Grid>
         </Border>
+
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="430" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderThickness="1" BorderBrush="#555" CornerRadius="8" Padding="10" Margin="0,0,10,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Calibration (Normalized ROI)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+
+                        <GroupBox Header="StartPrompt" Margin="0,0,0,8">
+                            <UniformGrid Columns="2" Margin="8">
+                                <TextBlock Text="X" /><TextBox Text="{Binding Calibration.StartPromptX, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Y" /><TextBox Text="{Binding Calibration.StartPromptY, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="W" /><TextBox Text="{Binding Calibration.StartPromptW, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="H" /><TextBox Text="{Binding Calibration.StartPromptH, UpdateSourceTrigger=PropertyChanged}" />
+                            </UniformGrid>
+                        </GroupBox>
+
+                        <GroupBox Header="TensionWidget" Margin="0,0,0,8">
+                            <UniformGrid Columns="2" Margin="8">
+                                <TextBlock Text="X" /><TextBox Text="{Binding Calibration.TensionWidgetX, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Y" /><TextBox Text="{Binding Calibration.TensionWidgetY, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="W" /><TextBox Text="{Binding Calibration.TensionWidgetW, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="H" /><TextBox Text="{Binding Calibration.TensionWidgetH, UpdateSourceTrigger=PropertyChanged}" />
+                            </UniformGrid>
+                        </GroupBox>
+
+                        <GroupBox Header="FightBar" Margin="0,0,0,8">
+                            <UniformGrid Columns="2" Margin="8">
+                                <TextBlock Text="X" /><TextBox Text="{Binding Calibration.FightBarX, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Y" /><TextBox Text="{Binding Calibration.FightBarY, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="W" /><TextBox Text="{Binding Calibration.FightBarW, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="H" /><TextBox Text="{Binding Calibration.FightBarH, UpdateSourceTrigger=PropertyChanged}" />
+                            </UniformGrid>
+                        </GroupBox>
+
+                        <GroupBox Header="CatchMenu" Margin="0,0,0,8">
+                            <UniformGrid Columns="2" Margin="8">
+                                <TextBlock Text="X" /><TextBox Text="{Binding Calibration.CatchMenuX, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Y" /><TextBox Text="{Binding Calibration.CatchMenuY, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="W" /><TextBox Text="{Binding Calibration.CatchMenuW, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="H" /><TextBox Text="{Binding Calibration.CatchMenuH, UpdateSourceTrigger=PropertyChanged}" />
+                            </UniformGrid>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="1" BorderThickness="1" BorderBrush="#555" CornerRadius="8" Padding="10" Margin="0,0,10,0">
+                <StackPanel>
+                    <TextBlock Text="Live Telemetry" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Status" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding StatusText}" />
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="State" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CurrentState}" />
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Running" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding IsRunning}" />
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Paused" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding IsPaused}" />
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="StartPrompt" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding StartPromptDetected}" />
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="StartPrompt conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding StartPromptConfidence}" />
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="Bite / conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding BiteDetected}" />
+
+                        <TextBlock Grid.Row="7" Grid.Column="0" Text="Bite conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="7" Grid.Column="1" Text="{Binding BiteConfidence}" />
+
+                        <TextBlock Grid.Row="8" Grid.Column="0" Text="Fight marker X" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding FightMarkerX}" />
+
+                        <TextBlock Grid.Row="9" Grid.Column="0" Text="CatchMenu / conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="9" Grid.Column="1" Text="{Binding CatchMenuDetected}" />
+
+                        <TextBlock Grid.Row="10" Grid.Column="0" Text="CatchMenu conf" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="10" Grid.Column="1" Text="{Binding CatchMenuConfidence}" />
+
+                        <TextBlock Grid.Row="11" Grid.Column="0" Text="FPS (cap/vision)" FontWeight="SemiBold" />
+                        <TextBlock Grid.Row="11" Grid.Column="1" Text="{Binding CaptureFps}" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" BorderThickness="1" BorderBrush="#555" CornerRadius="8" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="2*" />
+                        <RowDefinition Height="3*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" BorderThickness="1" BorderBrush="#444" CornerRadius="6" Padding="8" Margin="0,0,0,8">
+                        <Grid>
+                            <Image Source="{Binding LivePreview}" Stretch="Uniform" />
+                            <TextBlock Text="Live Preview + ROI overlay"
+                                       HorizontalAlignment="Left"
+                                       VerticalAlignment="Top"
+                                       Margin="6"
+                                       Background="#AA000000"
+                                       Foreground="White"
+                                       Padding="4,2" />
+                        </Grid>
+                    </Border>
+
+                    <DockPanel Grid.Row="1">
+                        <TextBlock DockPanel.Dock="Top" Text="Logs (last 500)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10" />
+                        <ListBox ItemsSource="{Binding Logs}" />
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
