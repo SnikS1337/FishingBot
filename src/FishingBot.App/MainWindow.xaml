@@ -168,14 +168,40 @@
 
                     <Border Grid.Row="0" BorderThickness="1" BorderBrush="#444" CornerRadius="6" Padding="8" Margin="0,0,0,8">
                         <Grid>
-                            <Image Source="{Binding LivePreview}" Stretch="Uniform" />
-                            <TextBlock Text="Live Preview + ROI overlay"
-                                       HorizontalAlignment="Left"
-                                       VerticalAlignment="Top"
-                                       Margin="6"
-                                       Background="#AA000000"
-                                       Foreground="White"
-                                       Padding="4,2" />
+                            <Image x:Name="PreviewImage" Source="{Binding LivePreview}" Stretch="Fill" />
+
+                            <Canvas x:Name="RoiCanvas"
+                                    Background="#01000000"
+                                    SizeChanged="RoiCanvas_SizeChanged"
+                                    MouseLeftButtonDown="RoiCanvas_MouseLeftButtonDown"
+                                    MouseMove="RoiCanvas_MouseMove"
+                                    MouseLeftButtonUp="RoiCanvas_MouseLeftButtonUp">
+                                <Rectangle x:Name="StartPromptRect" Stroke="#00D1FF" StrokeThickness="2" Fill="#2200D1FF" />
+                                <Rectangle x:Name="TensionRect" Stroke="#FF9800" StrokeThickness="2" Fill="#22FF9800" />
+                                <Rectangle x:Name="FightRect" Stroke="#F5E663" StrokeThickness="2" Fill="#22F5E663" />
+                                <Rectangle x:Name="CatchMenuRect" Stroke="#5AF78E" StrokeThickness="2" Fill="#225AF78E" />
+
+                                <Rectangle x:Name="StartPromptHandle" Width="10" Height="10" Fill="#00D1FF" />
+                                <Rectangle x:Name="TensionHandle" Width="10" Height="10" Fill="#FF9800" />
+                                <Rectangle x:Name="FightHandle" Width="10" Height="10" Fill="#F5E663" />
+                                <Rectangle x:Name="CatchMenuHandle" Width="10" Height="10" Fill="#5AF78E" />
+
+                                <TextBlock x:Name="StartPromptLabel" Text="StartPrompt" Foreground="#00D1FF" FontWeight="Bold" FontSize="11" />
+                                <TextBlock x:Name="TensionLabel" Text="Tension" Foreground="#FF9800" FontWeight="Bold" FontSize="11" />
+                                <TextBlock x:Name="FightLabel" Text="Fight" Foreground="#F5E663" FontWeight="Bold" FontSize="11" />
+                                <TextBlock x:Name="CatchMenuLabel" Text="CatchMenu" Foreground="#5AF78E" FontWeight="Bold" FontSize="11" />
+                            </Canvas>
+
+                            <Border HorizontalAlignment="Left"
+                                    VerticalAlignment="Top"
+                                    Margin="6"
+                                    Background="#AA000000"
+                                    Padding="6,4"
+                                    CornerRadius="4">
+                                <TextBlock Text="LMB: move ROI | LMB near corner: resize"
+                                           Foreground="White"
+                                           FontSize="11" />
+                            </Border>
                         </Grid>
                     </Border>
 
