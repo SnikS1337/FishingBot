@@ -327,6 +327,26 @@ public sealed class AppOrchestrator : IDisposable
             return;
         }
 
+        if (_previousFightMarkerX < 0)
+        {
+            var fightRect = _config.Regions.FightBar.ToPixelRect(_config.Resolution.W, _config.Resolution.H);
+            var centerX = Math.Max(1, fightRect.Width) / 2;
+
+            if (snapshot.FightMarkerX >= centerX)
+            {
+                _lastFightDirection = 1;
+                _inputEngine.HoldA();
+            }
+            else
+            {
+                _lastFightDirection = -1;
+                _inputEngine.HoldD();
+            }
+
+            _previousFightMarkerX = snapshot.FightMarkerX;
+            return;
+        }
+
         if (_previousFightMarkerX >= 0)
         {
             var delta = snapshot.FightMarkerX - _previousFightMarkerX;
@@ -389,6 +409,7 @@ public sealed class AppOrchestrator : IDisposable
         return state switch
         {
             FishingState.WaitStartPrompt => _timeouts.WaitStartPromptMs,
+            FishingState.StartFishing => _timeouts.StartFishingMs,
             FishingState.WaitBite => _timeouts.WaitBiteMs,
             FishingState.Fight => _timeouts.FightMs,
             FishingState.CatchMenu => _timeouts.CatchMenuMs,
