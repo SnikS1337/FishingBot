@@ -48,6 +48,9 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private bool _isRunning;
     private bool _isPaused;
     private string _selectedFishAction;
+    private bool _autoRecast;
+    private int _actionDelayMin;
+    private int _recastDelayMin;
     private ImageSource? _livePreview;
 
     private readonly InputEngine _manualInput = new();
@@ -64,6 +67,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
 
         FishActions = ["TAKE", "RELEASE"];
         _selectedFishAction = _config.Fishing.Action.ToUpperInvariant();
+        LoadUiSettingsFromConfig();
 
         StartDetectOnlyCommand = new RelayCommand(() => Start(activeMode: false));
         StartActiveCommand = new RelayCommand(() => Start(activeMode: true));
@@ -71,6 +75,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         StopCommand = new RelayCommand(Stop);
         SaveConfigCommand = new RelayCommand(SaveConfig);
         ReloadConfigCommand = new RelayCommand(ReloadConfig);
+        ClearLogsCommand = new RelayCommand(ClearLogs);
         TestACommand = new RelayCommand(TestAKey);
         TestDCommand = new RelayCommand(TestDKey);
         TestSpaceCommand = new RelayCommand(TestSpaceKey);
@@ -97,6 +102,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     public ICommand SaveConfigCommand { get; }
 
     public ICommand ReloadConfigCommand { get; }
+
+    public ICommand ClearLogsCommand { get; }
 
     public ICommand TestACommand { get; }
 
@@ -212,6 +219,24 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _selectedFishAction;
         set => SetProperty(ref _selectedFishAction, value);
+    }
+
+    public bool AutoRecast
+    {
+        get => _autoRecast;
+        set => SetProperty(ref _autoRecast, value);
+    }
+
+    public int ActionDelayMin
+    {
+        get => _actionDelayMin;
+        set => SetProperty(ref _actionDelayMin, Math.Clamp(value, 50, 5000));
+    }
+
+    public int RecastDelayMin
+    {
+        get => _recastDelayMin;
+        set => SetProperty(ref _recastDelayMin, Math.Clamp(value, 100, 10000));
     }
 
     public ImageSource? LivePreview
@@ -331,9 +356,15 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         _config = _configService.Load(_configPath);
         Calibration.LoadFrom(_config);
-        SelectedFishAction = _config.Fishing.Action.ToUpperInvariant();
+        LoadUiSettingsFromConfig();
         StatusText = "Config reloaded";
         AddLog("INFO", "CONFIG", "Configuration reloaded");
+    }
+
+    private void ClearLogs()
+    {
+        Logs.Clear();
+        AddLog("INFO", "LOG", "Logs cleared");
     }
 
     private void TestAKey()
@@ -406,7 +437,33 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private void ApplySettingsToConfig()
     {
         _config.Fishing.Action = SelectedFishAction.ToUpperInvariant();
+        _config.Fishing.AutoRecast = AutoRecast;
+
+        var recastMax = _config.Fishing.RecastDelayMs.ElementAtOrDefault(1);
+        if (recastMax <= RecastDelayMin)
+        {
+            recastMax = RecastDelayMin + 500;
+        }
+
+        _config.Fishing.RecastDelayMs = [RecastDelayMin, recastMax];
+        _config.Timing.ActionDelayMin = ActionDelayMin;
+
+        if (_config.Timing.ActionDelayMax < _config.Timing.ActionDelayMin)
+        {
+            _config.Timing.ActionDelayMax = _config.Timing.ActionDelayMin + 20;
+        }
+
         Calibration.ApplyTo(_config);
+    }
+
+    private void LoadUiSettingsFromConfig()
+    {
+        SelectedFishAction = _config.Fishing.Action.ToUpperInvariant();
+        AutoRecast = _config.Fishing.AutoRecast;
+        ActionDelayMin = _config.Timing.ActionDelayMin;
+        RecastDelayMin = _config.Fishing.RecastDelayMs.ElementAtOrDefault(0) <= 0
+            ? 1000
+            : _config.Fishing.RecastDelayMs[0];
     }
 
     private string GetTemplatePath(string fileName)
@@ -481,9 +538,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         var candidates = new[]
         {
-            Path.Combine(Environment.CurrentDirectory, "config.json"),
-            Path.Combine(AppContext.BaseDirectory, "config.json"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "config.json"))
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "config.json")),
+            Path.Combine(AppContext.BaseDirectory, "config.json")
         };
 
         foreach (var candidate in candidates)
