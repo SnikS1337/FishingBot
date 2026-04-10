@@ -11,7 +11,11 @@ public sealed class TensionDetector
             return new DetectionResult(false, 0);
         }
 
-        var mean = Cv2.Mean(frame);
+        var barHeight = Math.Max(1, (int)(frame.Rows * 0.20));
+        var barY = Math.Max(0, frame.Rows - barHeight);
+        using var barRoi = new Mat(frame, new OpenCvSharp.Rect(0, barY, frame.Cols, barHeight));
+
+        var mean = Cv2.Mean(barRoi);
         var b = mean.Val0;
         var g = mean.Val1;
         var r = mean.Val2;

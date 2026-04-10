@@ -390,11 +390,12 @@ public sealed class AppOrchestrator : IDisposable
     private bool TryAlignAimFast()
     {
         // Отдельный быстрый цикл для narrow-window попадания по зелёной зоне.
-        for (var i = 0; i < 5; i++)
+        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(2500);
+        while (DateTimeOffset.UtcNow < deadline)
         {
             if (!_captureEngine.TryGetLatestFrame(out var fastFrame))
             {
-                Thread.Sleep(5);
+                Thread.Sleep(3);
                 continue;
             }
 
@@ -408,7 +409,7 @@ public sealed class AppOrchestrator : IDisposable
                 }
             }
 
-            Thread.Sleep(5);
+            Thread.Sleep(3);
         }
 
         return false;
