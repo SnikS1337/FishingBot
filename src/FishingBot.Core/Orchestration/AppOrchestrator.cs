@@ -33,7 +33,7 @@ public sealed class AppOrchestrator : IDisposable
     private int _previousFightMarkerX;
     private int _lastFightDirection;
     private int _startPromptSeenFrames;
-    private DateTimeOffset _firstEnterFishingPressUtc;
+    private DateTimeOffset _secondPressReadyUtc;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -58,7 +58,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
-        _firstEnterFishingPressUtc = default;
+        _secondPressReadyUtc = default;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -139,7 +139,7 @@ public sealed class AppOrchestrator : IDisposable
             _previousFightMarkerX = -1;
             _lastFightDirection = 0;
             _startPromptSeenFrames = 0;
-            _firstEnterFishingPressUtc = default;
+            _secondPressReadyUtc = default;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -225,9 +225,7 @@ public sealed class AppOrchestrator : IDisposable
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
                 break;
 
-            case FishingState.WaitSecondStartPrompt
-                when IsStartPromptConfirmed(snapshot)
-                     && EntryTimingPolicy.AllowSecondStartPrompt(_firstEnterFishingPressUtc, DateTimeOffset.UtcNow, cooldownMs: 2000):
+            case FishingState.WaitSecondStartPrompt when !_isActiveMode && IsStartPromptConfirmed(snapshot):
                 ApplyEvent(FishingEvent.StartPromptDetected, "second start prompt detected");
                 break;
 
@@ -252,13 +250,23 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressE();
-                        _firstEnterFishingPressUtc = DateTimeOffset.UtcNow;
+                        _secondPressReadyUtc = DateTimeOffset.UtcNow.AddMilliseconds(2500);
                         Log("INFO", "PRESS_E", "Pressed first E to enter fishing mode.");
                         Thread.Sleep(400);
                     }
 
                     ApplyEvent(FishingEvent.StartFishingDone, "entered fishing mode and waiting second prompt");
                 });
+                break;
+
+            case FishingState.WaitSecondStartPrompt:
+                if (CanAct() && _secondPressReadyUtc != default && DateTimeOffset.UtcNow >= _secondPressReadyUtc)
+                {
+                    RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
+                    _inputEngine.PressE();
+                    Log("INFO", "PRESS_E", "Pressed second E after cooldown.");
+                    ApplyEvent(FishingEvent.StartPromptDetected, "second E cooldown elapsed");
+                }
                 break;
 
             case FishingState.StartFishing:
@@ -407,7 +415,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
-        _firstEnterFishingPressUtc = default;
+        _secondPressReadyUtc = default;
 
         Log("INFO", "STATE_CHANGE", $"{before} -> {after} ({reason})");
         StateChanged?.Invoke(after);
@@ -497,7 +505,7 @@ public sealed class AppOrchestrator : IDisposable
         DrawRegion(frame, _config.Regions.CatchMenu,      Scalar.LightGreen, "CatchMenu");
 
         var markerText = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
-        var status = $"State:{_fsm.Current} Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned} Bite:{snapshot.BiteDetected} Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
+        var status = $"State:{_fsm.Current} Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned}({snapshot.AimConfidence:F2}) Bite:{snapshot.BiteDetected}({snapshot.BiteConfidence:F2}) Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
         Cv2.PutText(frame, status, new OpenCvSharp.Point(20, 30),
             HersheyFonts.HersheySimplex, 0.65, Scalar.Lime, 2, LineTypes.AntiAlias);
     }
