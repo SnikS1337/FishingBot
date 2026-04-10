@@ -63,8 +63,9 @@ public sealed class StartPromptDetector
         var confidence = (areaConfidence * 0.6) + (contrastConfidence * 0.4);
 
         var detected = hasEKeyLikeRect
-            && brightRatio is > 0.004 and < 0.30
-            && darkRatio > 0.25;
+            && areaConfidence > 0.08
+            && brightRatio is > 0.002 and < 0.35
+            && contrastConfidence > 0.10;
 
         return new DetectionResult(detected, confidence);
     }

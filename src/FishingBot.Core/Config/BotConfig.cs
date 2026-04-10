@@ -41,7 +41,7 @@ public sealed class TimingConfig
 public sealed class RegionsConfig
 {
     // Правый нижний угол — "Начать рыбалку E"
-    public NormalizedRect StartPrompt { get; set; } = new(0.855, 0.908, 0.095, 0.048);
+    public NormalizedRect StartPrompt { get; set; } = new(0.78, 0.90, 0.21, 0.08);
 
     // Верхний левый угол — "Нажмите E чтобы начать ловить рыбу"
     public NormalizedRect StartPromptAlt { get; set; } = new(0.01, 0.01, 0.32, 0.045);
@@ -54,8 +54,8 @@ public sealed class RegionsConfig
 
 public sealed class DetectionConfig
 {
-    public double StartPromptThreshold { get; set; } = 0.80;
-    public int StartPromptConfirmFrames { get; set; } = 2;
+    public double StartPromptThreshold { get; set; } = 0.68;
+    public int StartPromptConfirmFrames { get; set; } = 1;
     public double BiteThreshold { get; set; } = 0.75;
     public int BiteConfirmFrames { get; set; } = 2;
     public double CatchMenuThreshold { get; set; } = 0.80;

@@ -409,7 +409,8 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 new FightDetector(),
                 new CatchMenuDetector(
                     GetTemplatePath("btn_take.png"),
-                    GetTemplatePath("btn_release.png")));
+                    GetTemplatePath("btn_release.png")),
+                _config.Detection.StartPromptThreshold);
             var input = new InputEngine();
 
             _orchestrator = new AppOrchestrator(

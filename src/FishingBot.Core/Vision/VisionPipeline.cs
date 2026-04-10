@@ -5,6 +5,7 @@ namespace FishingBot.Core.Vision;
 
 public sealed class VisionPipeline : IVisionPipeline
 {
+    private readonly double _startPromptThreshold;
     private readonly StartPromptDetector _startPromptDetector;
     private readonly AimDetector _aimDetector;
     private readonly TensionDetector _tensionDetector;
@@ -16,8 +17,10 @@ public sealed class VisionPipeline : IVisionPipeline
         AimDetector aimDetector,
         TensionDetector tensionDetector,
         FightDetector fightDetector,
-        CatchMenuDetector catchMenuDetector)
+        CatchMenuDetector catchMenuDetector,
+        double startPromptThreshold = 0.68)
     {
+        _startPromptThreshold = Math.Clamp(startPromptThreshold, 0.0, 1.0);
         _startPromptDetector = startPromptDetector;
         _aimDetector = aimDetector;
         _tensionDetector = tensionDetector;
@@ -37,8 +40,8 @@ public sealed class VisionPipeline : IVisionPipeline
         var startAlt = _startPromptDetector.Detect(startPromptAltRoi);
 
         // Детектируем любой из двух регионов
-        var startDetected = start.IsDetected || startAlt.IsDetected;
         var startConfidence = Math.Max(start.Confidence, startAlt.Confidence);
+        var startDetected = startConfidence >= _startPromptThreshold;
 
         var aim = _aimDetector.Detect(aimRoi);
         var bite = _tensionDetector.Detect(tensionRoi);

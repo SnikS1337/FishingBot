@@ -33,6 +33,7 @@ public sealed class AppOrchestrator : IDisposable
     private DateTimeOffset _stateEnteredUtc;
     private int _previousFightMarkerX;
     private int _lastFightDirection;
+    private int _startPromptSeenFrames;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -57,6 +58,7 @@ public sealed class AppOrchestrator : IDisposable
         _entryActionPending = true;
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
+        _startPromptSeenFrames = 0;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -136,6 +138,7 @@ public sealed class AppOrchestrator : IDisposable
             _entryActionPending = true;
             _previousFightMarkerX = -1;
             _lastFightDirection = 0;
+            _startPromptSeenFrames = 0;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -210,13 +213,18 @@ public sealed class AppOrchestrator : IDisposable
 
     private void ProcessVisionEvents(VisionSnapshot snapshot)
     {
+        if (!snapshot.StartPromptDetected)
+        {
+            _startPromptSeenFrames = 0;
+        }
+
         switch (_fsm.Current)
         {
-            case FishingState.WaitStartPrompt when snapshot.StartPromptDetected:
+            case FishingState.WaitStartPrompt when IsStartPromptConfirmed(snapshot):
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
                 break;
 
-            case FishingState.WaitSecondStartPrompt when snapshot.StartPromptDetected:
+            case FishingState.WaitSecondStartPrompt when IsStartPromptConfirmed(snapshot):
                 ApplyEvent(FishingEvent.StartPromptDetected, "second start prompt detected");
                 break;
 
@@ -420,9 +428,23 @@ public sealed class AppOrchestrator : IDisposable
         _entryActionPending = true;
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
+        _startPromptSeenFrames = 0;
 
         Log("INFO", "STATE_CHANGE", $"{before} -> {after} ({reason})");
         StateChanged?.Invoke(after);
+    }
+
+    private bool IsStartPromptConfirmed(VisionSnapshot snapshot)
+    {
+        if (!snapshot.StartPromptDetected)
+        {
+            _startPromptSeenFrames = 0;
+            return false;
+        }
+
+        _startPromptSeenFrames++;
+        var requiredFrames = Math.Max(1, _config.Detection.StartPromptConfirmFrames);
+        return _startPromptSeenFrames >= requiredFrames;
     }
 
     private int GetTimeoutForState(FishingState state)

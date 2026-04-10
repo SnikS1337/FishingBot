@@ -17,7 +17,7 @@
     "actionDelayMax": 200
   },
   "regions": {
-    "startPrompt":    { "x": 0.855, "y": 0.908, "w": 0.095, "h": 0.048 },
+    "startPrompt":    { "x": 0.78,  "y": 0.90,  "w": 0.21,  "h": 0.08  },
     "startPromptAlt": { "x": 0.01,  "y": 0.01,  "w": 0.32,  "h": 0.045 },
     "aimBar":         { "x": 0.32,  "y": 0.824, "w": 0.40,  "h": 0.038 },
     "tensionWidget":  { "x": 0.724, "y": 0.790, "w": 0.088, "h": 0.010 },
@@ -25,8 +25,8 @@
     "catchMenu":      { "x": 0.28,  "y": 0.08,  "w": 0.44,  "h": 0.82  }
   },
   "detection": {
-    "startPromptThreshold": 0.80,
-    "startPromptConfirmFrames": 2,
+    "startPromptThreshold": 0.68,
+    "startPromptConfirmFrames": 1,
     "biteThreshold": 0.75,
     "biteConfirmFrames": 2,
     "catchMenuThreshold": 0.80,
