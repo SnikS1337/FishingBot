@@ -60,19 +60,14 @@ public sealed class AppOrchestrator : IDisposable
     }
 
     public event Action<FishingState>? StateChanged;
-
     public event Action<VisionSnapshot>? SnapshotUpdated;
-
     public event Action<byte[]>? PreviewFrameUpdated;
 
     public FishingState CurrentState => _fsm.Current;
-
     public bool IsRunning => _loopTask is { IsCompleted: false };
-
     public bool IsPaused => _isPaused;
 
     public void StartDetectOnly() => StartInternal(activeMode: false);
-
     public void StartActive() => StartInternal(activeMode: true);
 
     public void Pause()
@@ -115,10 +110,7 @@ public sealed class AppOrchestrator : IDisposable
         {
             loopTask?.Wait(TimeSpan.FromSeconds(2));
         }
-        catch
-        {
-            // Ignore cancellation/teardown exceptions.
-        }
+        catch { }
         finally
         {
             cts?.Dispose();
@@ -129,10 +121,7 @@ public sealed class AppOrchestrator : IDisposable
         Log("INFO", "STOPPED", "Execution stopped.");
     }
 
-    public void Dispose()
-    {
-        Stop();
-    }
+    public void Dispose() => Stop();
 
     private void StartInternal(bool activeMode)
     {
@@ -182,21 +171,23 @@ public sealed class AppOrchestrator : IDisposable
     private void Tick()
     {
         if (!_captureEngine.TryGetLatestFrame(out var frame))
-        {
             return;
-        }
 
         using (frame)
         {
-            using var startPromptRoi = Crop(frame.BgrFrame, _config.Regions.StartPrompt);
-            using var aimRoi = Crop(frame.BgrFrame, _config.Regions.AimBar);
-            using var tensionRoi = Crop(frame.BgrFrame, _config.Regions.TensionWidget);
-            using var fightRoi = Crop(frame.BgrFrame, _config.Regions.FightBar);
-            using var catchMenuRoi = Crop(frame.BgrFrame, _config.Regions.CatchMenu);
+            // Два региона для StartPrompt — правый нижний и верхний левый
+            using var startPromptRoi    = Crop(frame.BgrFrame, _config.Regions.StartPrompt);
+            using var startPromptAltRoi = Crop(frame.BgrFrame, _config.Regions.StartPromptAlt);
+            using var aimRoi            = Crop(frame.BgrFrame, _config.Regions.AimBar);
+            using var tensionRoi        = Crop(frame.BgrFrame, _config.Regions.TensionWidget);
+            using var fightRoi          = Crop(frame.BgrFrame, _config.Regions.FightBar);
+            using var catchMenuRoi      = Crop(frame.BgrFrame, _config.Regions.CatchMenu);
 
-            var snapshot = _visionPipeline.Analyze(startPromptRoi, aimRoi, tensionRoi, fightRoi, catchMenuRoi);
+            var snapshot = _visionPipeline.Analyze(
+                startPromptRoi, startPromptAltRoi,
+                aimRoi, tensionRoi, fightRoi, catchMenuRoi);
+
             SnapshotUpdated?.Invoke(snapshot);
-
             PublishPreviewFrame(frame.BgrFrame, snapshot);
 
             CheckStateTimeout();
@@ -208,16 +199,10 @@ public sealed class AppOrchestrator : IDisposable
     private void CheckStateTimeout()
     {
         var timeoutMs = GetTimeoutForState(_fsm.Current);
-        if (timeoutMs <= 0)
-        {
-            return;
-        }
+        if (timeoutMs <= 0) return;
 
         var elapsed = DateTimeOffset.UtcNow - _stateEnteredUtc;
-        if (elapsed.TotalMilliseconds < timeoutMs)
-        {
-            return;
-        }
+        if (elapsed.TotalMilliseconds < timeoutMs) return;
 
         _inputEngine.ReleaseAll();
         ApplyEvent(FishingEvent.Timeout, $"state {_fsm.Current} timeout ({timeoutMs}ms)");
@@ -252,11 +237,14 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressE();
-                        Log("INFO", "PRESS_E", "Entered fishing mode by E.");
+                        Log("INFO", "PRESS_E", "Pressed E to enter fishing mode.");
+
+                        // Небольшая пауза чтобы UI успел открыться после E
+                        Thread.Sleep(400);
                     }
                 });
 
-                // Этап прицеливания после старта: быстрые попытки поймать зелёную зону.
+                // Быстрый цикл прицеливания — ждём зелёную зону → жмём Пробел
                 var aimAligned = snapshot.AimAligned || TryAlignAimFast();
                 if (aimAligned)
                 {
@@ -264,7 +252,7 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressSpace();
-                        Log("INFO", "AIM_SPACE", "Aim aligned, pressed Space.");
+                        Log("INFO", "AIM_SPACE", "Aim aligned, pressed Space to cast.");
                     }
 
                     ApplyEvent(FishingEvent.StartFishingDone, "aim aligned and cast confirmed");
@@ -278,7 +266,7 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressSpace();
-                        Log("INFO", "PRESS_SPACE", "Pressed Space for hook.");
+                        Log("INFO", "PRESS_SPACE", "Pressed Space to hook.");
                     }
 
                     ApplyEvent(FishingEvent.HookDone, "hook action done");
@@ -326,9 +314,7 @@ public sealed class AppOrchestrator : IDisposable
     private void HandleFight(VisionSnapshot snapshot)
     {
         if (!CanAct() || !snapshot.FightDetected || snapshot.FightMarkerX < 0)
-        {
             return;
-        }
 
         if (_previousFightMarkerX < 0)
         {
@@ -350,27 +336,24 @@ public sealed class AppOrchestrator : IDisposable
             return;
         }
 
-        if (_previousFightMarkerX >= 0)
+        var delta = snapshot.FightMarkerX - _previousFightMarkerX;
+        if (delta > 0)
         {
-            var delta = snapshot.FightMarkerX - _previousFightMarkerX;
-            if (delta > 0)
-            {
-                _lastFightDirection = 1;
-                _inputEngine.HoldA();
-            }
-            else if (delta < 0)
-            {
-                _lastFightDirection = -1;
-                _inputEngine.HoldD();
-            }
-            else if (_lastFightDirection > 0)
-            {
-                _inputEngine.HoldA();
-            }
-            else if (_lastFightDirection < 0)
-            {
-                _inputEngine.HoldD();
-            }
+            _lastFightDirection = 1;
+            _inputEngine.HoldA();
+        }
+        else if (delta < 0)
+        {
+            _lastFightDirection = -1;
+            _inputEngine.HoldD();
+        }
+        else if (_lastFightDirection > 0)
+        {
+            _inputEngine.HoldA();
+        }
+        else if (_lastFightDirection < 0)
+        {
+            _inputEngine.HoldD();
         }
 
         _previousFightMarkerX = snapshot.FightMarkerX;
@@ -378,18 +361,13 @@ public sealed class AppOrchestrator : IDisposable
 
     private void ExecuteEntryAction(Action action)
     {
-        if (!_entryActionPending)
-        {
-            return;
-        }
-
+        if (!_entryActionPending) return;
         _entryActionPending = false;
         action();
     }
 
     private bool TryAlignAimFast()
     {
-        // Отдельный быстрый цикл для narrow-window попадания по зелёной зоне.
         var deadline = DateTimeOffset.UtcNow.AddMilliseconds(2500);
         while (DateTimeOffset.UtcNow < deadline)
         {
@@ -404,9 +382,7 @@ public sealed class AppOrchestrator : IDisposable
             {
                 var aim = _aimDetector.Detect(aimRoi);
                 if (aim.IsDetected)
-                {
                     return true;
-                }
             }
 
             Thread.Sleep(3);
@@ -421,10 +397,7 @@ public sealed class AppOrchestrator : IDisposable
         _fsm.Handle(evt);
         var after = _fsm.Current;
 
-        if (before == after)
-        {
-            return;
-        }
+        if (before == after) return;
 
         _stateEnteredUtc = DateTimeOffset.UtcNow;
         _entryActionPending = true;
@@ -440,42 +413,38 @@ public sealed class AppOrchestrator : IDisposable
         return state switch
         {
             FishingState.WaitStartPrompt => _timeouts.WaitStartPromptMs,
-            FishingState.StartFishing => _timeouts.StartFishingMs,
-            FishingState.WaitBite => _timeouts.WaitBiteMs,
-            FishingState.Fight => _timeouts.FightMs,
-            FishingState.CatchMenu => _timeouts.CatchMenuMs,
+            FishingState.StartFishing    => _timeouts.StartFishingMs,
+            FishingState.WaitBite        => _timeouts.WaitBiteMs,
+            FishingState.Fight           => _timeouts.FightMs,
+            FishingState.CatchMenu       => _timeouts.CatchMenuMs,
             _ => 0
         };
     }
 
     private Mat Crop(Mat frame, NormalizedRect region)
     {
-        var rect = region.ToPixelRect(frame.Width, frame.Height);
-        var x = Math.Clamp(rect.X, 0, Math.Max(0, frame.Width - 1));
-        var y = Math.Clamp(rect.Y, 0, Math.Max(0, frame.Height - 1));
-        var width = Math.Clamp(rect.Width, 1, frame.Width - x);
+        var rect   = region.ToPixelRect(frame.Width, frame.Height);
+        var x      = Math.Clamp(rect.X, 0, Math.Max(0, frame.Width - 1));
+        var y      = Math.Clamp(rect.Y, 0, Math.Max(0, frame.Height - 1));
+        var width  = Math.Clamp(rect.Width,  1, frame.Width  - x);
         var height = Math.Clamp(rect.Height, 1, frame.Height - y);
-
         return new Mat(frame, new OpenCvSharp.Rect(x, y, width, height)).Clone();
     }
 
     private DrawingPoint ResolveCatchButtonPoint()
     {
         var action = _config.Fishing.Action?.ToUpperInvariant() ?? "RELEASE";
-        var menu = _config.Regions.CatchMenu.ToPixelRect(_config.Resolution.W, _config.Resolution.H);
+        var menu   = _config.Regions.CatchMenu.ToPixelRect(_config.Resolution.W, _config.Resolution.H);
 
         var xFactor = action == "TAKE" ? 0.32 : 0.68;
         var yFactor = 0.86;
 
-        var x = menu.X + (int)(menu.Width * xFactor);
+        var x = menu.X + (int)(menu.Width  * xFactor);
         var y = menu.Y + (int)(menu.Height * yFactor);
         return new DrawingPoint(x, y);
     }
 
-    private bool CanAct()
-    {
-        return _isActiveMode && !_isPaused;
-    }
+    private bool CanAct() => _isActiveMode && !_isPaused;
 
     private void RandomDelay(int minMs, int maxMs)
     {
@@ -485,16 +454,11 @@ public sealed class AppOrchestrator : IDisposable
     }
 
     private void Log(string level, string evt, string message)
-    {
-        _logSink.Write(new LogEntry(DateTimeOffset.UtcNow, level, evt, message));
-    }
+        => _logSink.Write(new LogEntry(DateTimeOffset.UtcNow, level, evt, message));
 
     private void PublishPreviewFrame(Mat sourceFrame, VisionSnapshot snapshot)
     {
-        if (PreviewFrameUpdated is null)
-        {
-            return;
-        }
+        if (PreviewFrameUpdated is null) return;
 
         using var preview = sourceFrame.Clone();
         DrawDebugOverlays(preview, snapshot);
@@ -505,54 +469,35 @@ public sealed class AppOrchestrator : IDisposable
 
     private void DrawDebugOverlays(Mat frame, VisionSnapshot snapshot)
     {
-        DrawRegion(frame, _config.Regions.StartPrompt, Scalar.Aqua, "StartPrompt");
-        DrawRegion(frame, _config.Regions.AimBar, Scalar.GreenYellow, "AimBar");
-        DrawRegion(frame, _config.Regions.TensionWidget, Scalar.Orange, "Tension");
-        DrawRegion(frame, _config.Regions.FightBar, Scalar.Yellow, "FightBar");
-        DrawRegion(frame, _config.Regions.CatchMenu, Scalar.LightGreen, "CatchMenu");
+        DrawRegion(frame, _config.Regions.StartPrompt,    Scalar.Aqua,       "StartPrompt");
+        DrawRegion(frame, _config.Regions.StartPromptAlt, Scalar.Cyan,       "StartPromptAlt");
+        DrawRegion(frame, _config.Regions.AimBar,         Scalar.GreenYellow,"AimBar");
+        DrawRegion(frame, _config.Regions.TensionWidget,  Scalar.Orange,     "Tension");
+        DrawRegion(frame, _config.Regions.FightBar,       Scalar.Yellow,     "FightBar");
+        DrawRegion(frame, _config.Regions.CatchMenu,      Scalar.LightGreen, "CatchMenu");
 
         var markerText = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
-        var status = $"State: {_fsm.Current} | Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned} Bite:{snapshot.BiteDetected} Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
-        Cv2.PutText(
-            frame,
-            status,
-            new OpenCvSharp.Point(20, 30),
-            HersheyFonts.HersheySimplex,
-            0.7,
-            Scalar.Lime,
-            2,
-            LineTypes.AntiAlias);
+        var status = $"State:{_fsm.Current} Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned} Bite:{snapshot.BiteDetected} Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
+        Cv2.PutText(frame, status, new OpenCvSharp.Point(20, 30),
+            HersheyFonts.HersheySimplex, 0.65, Scalar.Lime, 2, LineTypes.AntiAlias);
     }
 
     private void DrawRegion(Mat frame, NormalizedRect region, Scalar color, string label)
     {
-        var rect = region.ToPixelRect(frame.Width, frame.Height);
-        var x = Math.Clamp(rect.X, 0, Math.Max(0, frame.Width - 1));
-        var y = Math.Clamp(rect.Y, 0, Math.Max(0, frame.Height - 1));
-        var width = Math.Clamp(rect.Width, 1, frame.Width - x);
+        var rect   = region.ToPixelRect(frame.Width, frame.Height);
+        var x      = Math.Clamp(rect.X, 0, Math.Max(0, frame.Width - 1));
+        var y      = Math.Clamp(rect.Y, 0, Math.Max(0, frame.Height - 1));
+        var width  = Math.Clamp(rect.Width,  1, frame.Width  - x);
         var height = Math.Clamp(rect.Height, 1, frame.Height - y);
 
         Cv2.Rectangle(frame, new OpenCvSharp.Rect(x, y, width, height), color, 2, LineTypes.AntiAlias);
-        Cv2.PutText(
-            frame,
-            label,
-            new OpenCvSharp.Point(x, Math.Max(15, y - 6)),
-            HersheyFonts.HersheySimplex,
-            0.55,
-            color,
-            2,
-            LineTypes.AntiAlias);
+        Cv2.PutText(frame, label, new OpenCvSharp.Point(x, Math.Max(15, y - 6)),
+            HersheyFonts.HersheySimplex, 0.55, color, 2, LineTypes.AntiAlias);
     }
 
     private static async Task DelaySafe(int delayMs, CancellationToken token)
     {
-        try
-        {
-            await Task.Delay(delayMs, token);
-        }
-        catch (OperationCanceledException)
-        {
-            // Ignore.
-        }
+        try { await Task.Delay(delayMs, token); }
+        catch (OperationCanceledException) { }
     }
 }

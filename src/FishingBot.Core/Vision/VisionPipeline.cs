@@ -25,17 +25,29 @@ public sealed class VisionPipeline : IVisionPipeline
         _catchMenuDetector = catchMenuDetector;
     }
 
-    public VisionSnapshot Analyze(Mat startPromptRoi, Mat aimRoi, Mat tensionRoi, Mat fightRoi, Mat catchMenuRoi)
+    public VisionSnapshot Analyze(
+        Mat startPromptRoi,
+        Mat startPromptAltRoi,
+        Mat aimRoi,
+        Mat tensionRoi,
+        Mat fightRoi,
+        Mat catchMenuRoi)
     {
         var start = _startPromptDetector.Detect(startPromptRoi);
+        var startAlt = _startPromptDetector.Detect(startPromptAltRoi);
+
+        // Детектируем любой из двух регионов
+        var startDetected = start.IsDetected || startAlt.IsDetected;
+        var startConfidence = Math.Max(start.Confidence, startAlt.Confidence);
+
         var aim = _aimDetector.Detect(aimRoi);
         var bite = _tensionDetector.Detect(tensionRoi);
         var fight = _fightDetector.Detect(fightRoi);
         var menu = _catchMenuDetector.Detect(catchMenuRoi);
 
         return new VisionSnapshot(
-            StartPromptDetected: start.IsDetected,
-            StartPromptConfidence: start.Confidence,
+            StartPromptDetected: startDetected,
+            StartPromptConfidence: startConfidence,
             AimAligned: aim.IsDetected,
             AimConfidence: aim.Confidence,
             BiteDetected: bite.IsDetected,
