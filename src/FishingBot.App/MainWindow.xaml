@@ -639,7 +639,7 @@
                                     Padding="8,3">
                                 <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
                                            FontSize="10"
-                                           Text="{Binding CaptureFps, StringFormat={}{0:F0} FPS}"/>
+                                           Text="{Binding CaptureFps, StringFormat={}{0:F1} FPS}"/>
                             </Border>
                         </Grid>
                     </Border>

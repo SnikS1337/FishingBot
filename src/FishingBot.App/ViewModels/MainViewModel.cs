@@ -30,6 +30,7 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private InMemoryLogSink? _logSink;
     private AppOrchestrator? _orchestrator;
     private DateTimeOffset _lastSnapshotUtc;
+    private DateTimeOffset _lastPreviewUtc;
 
     private string _statusText = "Ready";
     private string _currentState = FishingState.WaitStartPrompt.ToString();
@@ -289,6 +290,11 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             return;
         }
 
+        _lastSnapshotUtc = default;
+        _lastPreviewUtc = default;
+        CaptureFps = 0;
+        VisionFps = 0;
+
         ApplySettingsToConfig();
         _configService.Save(_configPath, _config);
 
@@ -492,7 +498,6 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
                 if (deltaSeconds > 0)
                 {
                     var fps = Math.Round(1.0 / deltaSeconds, 1);
-                    CaptureFps = fps;
                     VisionFps = fps;
                 }
             }
@@ -520,7 +525,21 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private void OnPreviewFrameUpdated(byte[] frameBytes)
     {
         var image = BuildImage(frameBytes);
-        _uiDispatcher.Post(() => LivePreview = image);
+        _uiDispatcher.Post(() =>
+        {
+            var now = DateTimeOffset.UtcNow;
+            if (_lastPreviewUtc != default)
+            {
+                var deltaSeconds = (now - _lastPreviewUtc).TotalSeconds;
+                if (deltaSeconds > 0)
+                {
+                    CaptureFps = Math.Round(1.0 / deltaSeconds, 1);
+                }
+            }
+
+            _lastPreviewUtc = now;
+            LivePreview = image;
+        });
     }
 
     private void AddLog(string level, string evt, string message, DateTimeOffset? timestamp = null)

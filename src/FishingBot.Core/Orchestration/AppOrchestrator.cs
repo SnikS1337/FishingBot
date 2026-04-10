@@ -20,7 +20,6 @@ public sealed class AppOrchestrator : IDisposable
     private readonly BotConfig _config;
     private readonly StateTimeouts _timeouts;
     private readonly Random _random;
-    private readonly AimDetector _aimDetector;
 
     private FishingStateMachine _fsm;
     private CancellationTokenSource? _cts;
@@ -34,6 +33,7 @@ public sealed class AppOrchestrator : IDisposable
     private int _previousFightMarkerX;
     private int _lastFightDirection;
     private int _startPromptSeenFrames;
+    private DateTimeOffset _castAwaitStartedUtc;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -51,7 +51,6 @@ public sealed class AppOrchestrator : IDisposable
         _config = config;
         _timeouts = timeouts ?? new StateTimeouts();
         _random = random ?? new Random();
-        _aimDetector = new AimDetector();
 
         _fsm = new FishingStateMachine(FishingState.WaitStartPrompt);
         _stateEnteredUtc = DateTimeOffset.UtcNow;
@@ -59,6 +58,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
+        _castAwaitStartedUtc = default;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -139,6 +139,7 @@ public sealed class AppOrchestrator : IDisposable
             _previousFightMarkerX = -1;
             _lastFightDirection = 0;
             _startPromptSeenFrames = 0;
+            _castAwaitStartedUtc = default;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -267,11 +268,11 @@ public sealed class AppOrchestrator : IDisposable
                         Log("INFO", "PRESS_E", "Pressed second E to start fishing.");
                         Thread.Sleep(400);
                     }
+
+                    _castAwaitStartedUtc = DateTimeOffset.UtcNow;
                 });
 
-                // Быстрый цикл прицеливания — ждём зелёную зону → жмём Пробел
-                var aimAligned = snapshot.AimAligned || TryAlignAimFast();
-                if (aimAligned)
+                if (snapshot.AimAligned)
                 {
                     if (CanAct())
                     {
@@ -281,6 +282,17 @@ public sealed class AppOrchestrator : IDisposable
                     }
 
                     ApplyEvent(FishingEvent.StartFishingDone, "aim aligned and cast confirmed");
+                }
+                else if (IsCastFallbackDue())
+                {
+                    if (CanAct())
+                    {
+                        RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
+                        _inputEngine.PressSpace();
+                        Log("WARN", "CAST_FALLBACK_SPACE", "Aim timeout reached, forced Space cast.");
+                    }
+
+                    ApplyEvent(FishingEvent.StartFishingDone, "cast fallback timeout reached");
                 }
                 break;
 
@@ -391,31 +403,6 @@ public sealed class AppOrchestrator : IDisposable
         action();
     }
 
-    private bool TryAlignAimFast()
-    {
-        var deadline = DateTimeOffset.UtcNow.AddMilliseconds(2500);
-        while (DateTimeOffset.UtcNow < deadline)
-        {
-            if (!_captureEngine.TryGetLatestFrame(out var fastFrame))
-            {
-                Thread.Sleep(3);
-                continue;
-            }
-
-            using (fastFrame)
-            using (var aimRoi = Crop(fastFrame.BgrFrame, _config.Regions.AimBar))
-            {
-                var aim = _aimDetector.Detect(aimRoi);
-                if (aim.IsDetected)
-                    return true;
-            }
-
-            Thread.Sleep(3);
-        }
-
-        return false;
-    }
-
     private void ApplyEvent(FishingEvent evt, string reason)
     {
         var before = _fsm.Current;
@@ -429,6 +416,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
+        _castAwaitStartedUtc = default;
 
         Log("INFO", "STATE_CHANGE", $"{before} -> {after} ({reason})");
         StateChanged?.Invoke(after);
@@ -445,6 +433,16 @@ public sealed class AppOrchestrator : IDisposable
         _startPromptSeenFrames++;
         var requiredFrames = Math.Max(1, _config.Detection.StartPromptConfirmFrames);
         return _startPromptSeenFrames >= requiredFrames;
+    }
+
+    private bool IsCastFallbackDue()
+    {
+        if (_castAwaitStartedUtc == default)
+        {
+            return false;
+        }
+
+        return CastTimingPolicy.ShouldForceCast(_castAwaitStartedUtc, DateTimeOffset.UtcNow, timeoutMs: 1500);
     }
 
     private int GetTimeoutForState(FishingState state)
