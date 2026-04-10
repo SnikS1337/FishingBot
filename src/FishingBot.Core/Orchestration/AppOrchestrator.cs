@@ -33,7 +33,7 @@ public sealed class AppOrchestrator : IDisposable
     private int _previousFightMarkerX;
     private int _lastFightDirection;
     private int _startPromptSeenFrames;
-    private DateTimeOffset _castAwaitStartedUtc;
+    private DateTimeOffset _firstEnterFishingPressUtc;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -58,7 +58,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
-        _castAwaitStartedUtc = default;
+        _firstEnterFishingPressUtc = default;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -139,7 +139,7 @@ public sealed class AppOrchestrator : IDisposable
             _previousFightMarkerX = -1;
             _lastFightDirection = 0;
             _startPromptSeenFrames = 0;
-            _castAwaitStartedUtc = default;
+            _firstEnterFishingPressUtc = default;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -225,7 +225,9 @@ public sealed class AppOrchestrator : IDisposable
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
                 break;
 
-            case FishingState.WaitSecondStartPrompt when IsStartPromptConfirmed(snapshot):
+            case FishingState.WaitSecondStartPrompt
+                when IsStartPromptConfirmed(snapshot)
+                     && EntryTimingPolicy.AllowSecondStartPrompt(_firstEnterFishingPressUtc, DateTimeOffset.UtcNow, cooldownMs: 2000):
                 ApplyEvent(FishingEvent.StartPromptDetected, "second start prompt detected");
                 break;
 
@@ -250,6 +252,7 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressE();
+                        _firstEnterFishingPressUtc = DateTimeOffset.UtcNow;
                         Log("INFO", "PRESS_E", "Pressed first E to enter fishing mode.");
                         Thread.Sleep(400);
                     }
@@ -269,7 +272,6 @@ public sealed class AppOrchestrator : IDisposable
                         Thread.Sleep(400);
                     }
 
-                    _castAwaitStartedUtc = DateTimeOffset.UtcNow;
                 });
 
                 if (snapshot.AimAligned)
@@ -282,17 +284,6 @@ public sealed class AppOrchestrator : IDisposable
                     }
 
                     ApplyEvent(FishingEvent.StartFishingDone, "aim aligned and cast confirmed");
-                }
-                else if (IsCastFallbackDue())
-                {
-                    if (CanAct())
-                    {
-                        RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
-                        _inputEngine.PressSpace();
-                        Log("WARN", "CAST_FALLBACK_SPACE", "Aim timeout reached, forced Space cast.");
-                    }
-
-                    ApplyEvent(FishingEvent.StartFishingDone, "cast fallback timeout reached");
                 }
                 break;
 
@@ -416,7 +407,7 @@ public sealed class AppOrchestrator : IDisposable
         _previousFightMarkerX = -1;
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
-        _castAwaitStartedUtc = default;
+        _firstEnterFishingPressUtc = default;
 
         Log("INFO", "STATE_CHANGE", $"{before} -> {after} ({reason})");
         StateChanged?.Invoke(after);
@@ -433,16 +424,6 @@ public sealed class AppOrchestrator : IDisposable
         _startPromptSeenFrames++;
         var requiredFrames = Math.Max(1, _config.Detection.StartPromptConfirmFrames);
         return _startPromptSeenFrames >= requiredFrames;
-    }
-
-    private bool IsCastFallbackDue()
-    {
-        if (_castAwaitStartedUtc == default)
-        {
-            return false;
-        }
-
-        return CastTimingPolicy.ShouldForceCast(_castAwaitStartedUtc, DateTimeOffset.UtcNow, timeoutMs: 1500);
     }
 
     private int GetTimeoutForState(FishingState state)

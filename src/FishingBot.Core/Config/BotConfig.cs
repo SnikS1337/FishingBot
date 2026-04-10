@@ -46,9 +46,9 @@ public sealed class RegionsConfig
     // Верхний левый угол — "Нажмите E чтобы начать ловить рыбу"
     public NormalizedRect StartPromptAlt { get; set; } = new(0.01, 0.01, 0.32, 0.045);
 
-    public NormalizedRect AimBar { get; set; } = new(0.32, 0.824, 0.40, 0.038);
-    public NormalizedRect TensionWidget { get; set; } = new(0.724, 0.790, 0.088, 0.010);
-    public NormalizedRect FightBar { get; set; } = new(0.32, 0.655, 0.40, 0.028);
+    public NormalizedRect AimBar { get; set; } = new(0.30, 0.745, 0.44, 0.05);
+    public NormalizedRect TensionWidget { get; set; } = new(0.69, 0.73, 0.18, 0.16);
+    public NormalizedRect FightBar { get; set; } = new(0.30, 0.745, 0.44, 0.05);
     public NormalizedRect CatchMenu { get; set; } = new(0.28, 0.08, 0.44, 0.82);
 }
 
