@@ -17,11 +17,11 @@
     "actionDelayMax": 200
   },
   "regions": {
-    "startPrompt": { "x": 0.01, "y": 0.01, "w": 0.35, "h": 0.12 },
-    "aimBar": { "x": 0.30, "y": 0.78, "w": 0.45, "h": 0.10 },
-    "tensionWidget": { "x": 0.69, "y": 0.67, "w": 0.20, "h": 0.26 },
-    "fightBar": { "x": 0.30, "y": 0.78, "w": 0.45, "h": 0.16 },
-    "catchMenu": { "x": 0.35, "y": 0.20, "w": 0.32, "h": 0.58 }
+    "startPrompt": { "x": 0.78, "y": 0.92, "w": 0.20, "h": 0.06 },
+    "aimBar": { "x": 0.32, "y": 0.824, "w": 0.40, "h": 0.040 },
+    "tensionWidget": { "x": 0.718, "y": 0.742, "w": 0.095, "h": 0.020 },
+    "fightBar": { "x": 0.32, "y": 0.655, "w": 0.40, "h": 0.030 },
+    "catchMenu": { "x": 0.28, "y": 0.08, "w": 0.44, "h": 0.82 }
   },
   "detection": {
     "startPromptThreshold": 0.80,

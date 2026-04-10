@@ -11,56 +11,61 @@ public sealed class StartPromptDetector
             return new DetectionResult(false, 0);
         }
 
-        using var hsv = new Mat();
-        Cv2.CvtColor(frame, hsv, ColorConversionCodes.BGR2HSV);
+        using var gray = new Mat();
+        Cv2.CvtColor(frame, gray, ColorConversionCodes.BGR2GRAY);
 
-        using var greenMask = new Mat();
-        Cv2.InRange(hsv, new Scalar(45, 80, 80), new Scalar(95, 255, 255), greenMask);
+        using var brightMask = new Mat();
+        Cv2.Threshold(gray, brightMask, 205, 255, ThresholdTypes.Binary);
 
-        using var greenDilated = new Mat();
-        Cv2.Dilate(greenMask, greenDilated, Cv2.GetStructuringElement(MorphShapes.Rect, new Size(3, 3)));
+        using var darkMask = new Mat();
+        Cv2.Threshold(gray, darkMask, 65, 255, ThresholdTypes.BinaryInv);
 
-        var greenPixels = Cv2.CountNonZero(greenDilated);
         var totalPixels = frame.Rows * frame.Cols;
-        if (greenPixels < 8 || totalPixels <= 0)
+        if (totalPixels <= 0)
         {
             return new DetectionResult(false, 0);
         }
 
-        var greenRatio = greenPixels / (double)totalPixels;
+        var brightPixels = Cv2.CountNonZero(brightMask);
+        var darkPixels = Cv2.CountNonZero(darkMask);
+        var brightRatio = brightPixels / (double)totalPixels;
+        var darkRatio = darkPixels / (double)totalPixels;
 
-        // Ищем достаточно компактный зеленый маркер (галочка/иконка)
-        Cv2.FindContours(greenDilated, out var contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
-        if (contours.Length == 0)
-        {
-            return new DetectionResult(false, 0);
-        }
+        // Ищем контур, похожий на клавишу E (светлый прямоугольник около квадратного).
+        Cv2.FindContours(brightMask, out var contours, out _, RetrievalModes.External, ContourApproximationModes.ApproxSimple);
 
-        var maxArea = 0.0;
-        var maxRect = new Rect();
+        var hasEKeyLikeRect = false;
+        var bestArea = 0.0;
         foreach (var contour in contours)
         {
             var area = Cv2.ContourArea(contour);
-            if (area <= maxArea)
+            if (area < 12)
             {
                 continue;
             }
 
-            maxArea = area;
-            maxRect = Cv2.BoundingRect(contour);
+            var rect = Cv2.BoundingRect(contour);
+            if (rect.Width <= 0 || rect.Height <= 0)
+            {
+                continue;
+            }
+
+            var aspect = rect.Width / (double)rect.Height;
+            if (aspect is > 0.65 and < 1.45)
+            {
+                hasEKeyLikeRect = true;
+                bestArea = Math.Max(bestArea, area);
+            }
         }
 
-        if (maxArea < 20)
-        {
-            return new DetectionResult(false, 0);
-        }
+        var areaConfidence = Math.Clamp(bestArea / 250.0, 0.0, 1.0);
+        var contrastConfidence = Math.Clamp((brightRatio * 8.0) + (darkRatio * 0.8), 0.0, 1.0);
+        var confidence = (areaConfidence * 0.6) + (contrastConfidence * 0.4);
 
-        var compactness = maxRect.Width > 0 && maxRect.Height > 0
-            ? Math.Min(maxRect.Width, maxRect.Height) / (double)Math.Max(maxRect.Width, maxRect.Height)
-            : 0;
+        var detected = hasEKeyLikeRect
+            && brightRatio is > 0.004 and < 0.30
+            && darkRatio > 0.25;
 
-        var confidence = Math.Clamp((greenRatio * 10.0 * 0.5) + (compactness * 0.5), 0.0, 1.0);
-        var detected = greenRatio is > 0.001 and < 0.18 && compactness > 0.20;
         return new DetectionResult(detected, confidence);
     }
 }

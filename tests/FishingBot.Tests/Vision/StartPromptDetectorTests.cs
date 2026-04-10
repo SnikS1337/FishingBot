@@ -21,18 +21,20 @@ public class StartPromptDetectorTests
     }
 
     [Fact]
-    public void Detect_ReturnsTrue_OnGreenPromptMarker()
+    public void Detect_ReturnsTrue_OnEKeyLikePrompt()
     {
         // Arrange
         var detector = new StartPromptDetector();
-        using var frame = new Mat(60, 200, MatType.CV_8UC3, Scalar.Black);
-        Cv2.Rectangle(frame, new Rect(12, 12, 18, 18), new Scalar(0, 220, 0), -1);
+        using var frame = new Mat(80, 220, MatType.CV_8UC3, new Scalar(40, 40, 40));
+
+        // Имитация светлой кнопки E справа-снизу.
+        Cv2.Rectangle(frame, new Rect(170, 45, 28, 28), new Scalar(245, 245, 245), -1);
 
         // Act
         var result = detector.Detect(frame);
 
         // Assert
         Assert.True(result.IsDetected);
-        Assert.True(result.Confidence > 0.15);
+        Assert.True(result.Confidence > 0.20);
     }
 }

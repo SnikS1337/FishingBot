@@ -29,7 +29,7 @@ public sealed class DxgiCaptureEngine : ICaptureEngine
     private int _frameHeight;
     private bool _disposed;
 
-    public DxgiCaptureEngine(int acquireTimeoutMs = 16)
+    public DxgiCaptureEngine(int acquireTimeoutMs = 8)
     {
         _acquireTimeoutMs = acquireTimeoutMs;
         Initialize();

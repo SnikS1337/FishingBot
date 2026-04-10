@@ -20,6 +20,7 @@ public sealed class AppOrchestrator : IDisposable
     private readonly BotConfig _config;
     private readonly StateTimeouts _timeouts;
     private readonly Random _random;
+    private readonly AimDetector _aimDetector;
 
     private FishingStateMachine _fsm;
     private CancellationTokenSource? _cts;
@@ -49,6 +50,7 @@ public sealed class AppOrchestrator : IDisposable
         _config = config;
         _timeouts = timeouts ?? new StateTimeouts();
         _random = random ?? new Random();
+        _aimDetector = new AimDetector();
 
         _fsm = new FishingStateMachine(FishingState.WaitStartPrompt);
         _stateEnteredUtc = DateTimeOffset.UtcNow;
@@ -173,7 +175,7 @@ public sealed class AppOrchestrator : IDisposable
                 Log("ERROR", "LOOP_EXCEPTION", ex.Message);
             }
 
-            await DelaySafe(10, token);
+            await DelaySafe(5, token);
         }
     }
 
@@ -254,8 +256,9 @@ public sealed class AppOrchestrator : IDisposable
                     }
                 });
 
-                // Этап прицеливания после старта: ловим зеленую зону и подтверждаем пробелом.
-                if (snapshot.AimAligned)
+                // Этап прицеливания после старта: быстрые попытки поймать зелёную зону.
+                var aimAligned = snapshot.AimAligned || TryAlignAimFast();
+                if (aimAligned)
                 {
                     if (CanAct())
                     {
@@ -382,6 +385,33 @@ public sealed class AppOrchestrator : IDisposable
 
         _entryActionPending = false;
         action();
+    }
+
+    private bool TryAlignAimFast()
+    {
+        // Отдельный быстрый цикл для narrow-window попадания по зелёной зоне.
+        for (var i = 0; i < 5; i++)
+        {
+            if (!_captureEngine.TryGetLatestFrame(out var fastFrame))
+            {
+                Thread.Sleep(5);
+                continue;
+            }
+
+            using (fastFrame)
+            using (var aimRoi = Crop(fastFrame.BgrFrame, _config.Regions.AimBar))
+            {
+                var aim = _aimDetector.Detect(aimRoi);
+                if (aim.IsDetected)
+                {
+                    return true;
+                }
+            }
+
+            Thread.Sleep(5);
+        }
+
+        return false;
     }
 
     private void ApplyEvent(FishingEvent evt, string reason)
