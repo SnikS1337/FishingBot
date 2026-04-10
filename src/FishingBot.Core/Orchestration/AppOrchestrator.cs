@@ -216,6 +216,10 @@ public sealed class AppOrchestrator : IDisposable
                 ApplyEvent(FishingEvent.StartPromptDetected, "start prompt detected");
                 break;
 
+            case FishingState.WaitSecondStartPrompt when snapshot.StartPromptDetected:
+                ApplyEvent(FishingEvent.StartPromptDetected, "second start prompt detected");
+                break;
+
             case FishingState.WaitBite when snapshot.BiteDetected:
                 ApplyEvent(FishingEvent.BiteDetected, "tension red detected");
                 break;
@@ -230,6 +234,21 @@ public sealed class AppOrchestrator : IDisposable
     {
         switch (_fsm.Current)
         {
+            case FishingState.EnterFishingMode:
+                ExecuteEntryAction(() =>
+                {
+                    if (CanAct())
+                    {
+                        RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
+                        _inputEngine.PressE();
+                        Log("INFO", "PRESS_E", "Pressed first E to enter fishing mode.");
+                        Thread.Sleep(400);
+                    }
+
+                    ApplyEvent(FishingEvent.StartFishingDone, "entered fishing mode and waiting second prompt");
+                });
+                break;
+
             case FishingState.StartFishing:
                 ExecuteEntryAction(() =>
                 {
@@ -237,9 +256,7 @@ public sealed class AppOrchestrator : IDisposable
                     {
                         RandomDelay(_config.Timing.ActionDelayMin, _config.Timing.ActionDelayMax);
                         _inputEngine.PressE();
-                        Log("INFO", "PRESS_E", "Pressed E to enter fishing mode.");
-
-                        // Небольшая пауза чтобы UI успел открыться после E
+                        Log("INFO", "PRESS_E", "Pressed second E to start fishing.");
                         Thread.Sleep(400);
                     }
                 });
@@ -412,11 +429,13 @@ public sealed class AppOrchestrator : IDisposable
     {
         return state switch
         {
-            FishingState.WaitStartPrompt => _timeouts.WaitStartPromptMs,
-            FishingState.StartFishing    => _timeouts.StartFishingMs,
-            FishingState.WaitBite        => _timeouts.WaitBiteMs,
-            FishingState.Fight           => _timeouts.FightMs,
-            FishingState.CatchMenu       => _timeouts.CatchMenuMs,
+            FishingState.WaitStartPrompt       => _timeouts.WaitStartPromptMs,
+            FishingState.EnterFishingMode      => _timeouts.StartFishingMs,
+            FishingState.WaitSecondStartPrompt => _timeouts.WaitStartPromptMs,
+            FishingState.StartFishing          => _timeouts.StartFishingMs,
+            FishingState.WaitBite              => _timeouts.WaitBiteMs,
+            FishingState.Fight                 => _timeouts.FightMs,
+            FishingState.CatchMenu             => _timeouts.CatchMenuMs,
             _ => 0
         };
     }

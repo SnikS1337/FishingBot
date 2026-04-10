@@ -6,10 +6,23 @@ namespace FishingBot.Tests.Fsm;
 public class FishingStateMachineTests
 {
     [Fact]
-    public void StartPromptDetected_MovesToStartFishing()
+    public void FirstStartPromptDetected_MovesToEnterFishingMode()
     {
         // Arrange
         var fsm = new FishingStateMachine(FishingState.WaitStartPrompt);
+
+        // Act
+        fsm.Handle(FishingEvent.StartPromptDetected);
+
+        // Assert
+        Assert.Equal(FishingState.EnterFishingMode, fsm.Current);
+    }
+
+    [Fact]
+    public void SecondStartPromptDetected_MovesToStartFishing()
+    {
+        // Arrange
+        var fsm = new FishingStateMachine(FishingState.WaitSecondStartPrompt);
 
         // Act
         fsm.Handle(FishingEvent.StartPromptDetected);
@@ -51,6 +64,8 @@ public class FishingStateMachineTests
         var fsm = new FishingStateMachine(FishingState.WaitStartPrompt);
 
         // Act
+        fsm.Handle(FishingEvent.StartPromptDetected);
+        fsm.Handle(FishingEvent.StartFishingDone);
         fsm.Handle(FishingEvent.StartPromptDetected);
         fsm.Handle(FishingEvent.StartFishingDone);
         fsm.Handle(FishingEvent.BiteDetected);

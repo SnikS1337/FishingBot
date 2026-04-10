@@ -4,6 +4,8 @@ public enum FishingState
 {
     Idle,
     WaitStartPrompt,
+    EnterFishingMode,
+    WaitSecondStartPrompt,
     StartFishing,
     WaitBite,
     Hook,

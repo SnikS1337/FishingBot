@@ -13,7 +13,9 @@ public sealed class FishingStateMachine
     {
         Current = (Current, evt) switch
         {
-            (FishingState.WaitStartPrompt, FishingEvent.StartPromptDetected) => FishingState.StartFishing,
+            (FishingState.WaitStartPrompt, FishingEvent.StartPromptDetected) => FishingState.EnterFishingMode,
+            (FishingState.EnterFishingMode, FishingEvent.StartFishingDone) => FishingState.WaitSecondStartPrompt,
+            (FishingState.WaitSecondStartPrompt, FishingEvent.StartPromptDetected) => FishingState.StartFishing,
             (FishingState.StartFishing, FishingEvent.StartFishingDone) => FishingState.WaitBite,
             (FishingState.WaitBite, FishingEvent.BiteDetected) => FishingState.Hook,
             (FishingState.Hook, FishingEvent.HookDone) => FishingState.Fight,
