@@ -20,6 +20,12 @@ public sealed class VisionPipeline : IVisionPipeline
         CatchMenuDetector catchMenuDetector,
         double startPromptThreshold = 0.68)
     {
+        ArgumentNullException.ThrowIfNull(startPromptDetector);
+        ArgumentNullException.ThrowIfNull(aimDetector);
+        ArgumentNullException.ThrowIfNull(tensionDetector);
+        ArgumentNullException.ThrowIfNull(fightDetector);
+        ArgumentNullException.ThrowIfNull(catchMenuDetector);
+
         _startPromptThreshold = Math.Clamp(startPromptThreshold, 0.0, 1.0);
         _startPromptDetector = startPromptDetector;
         _aimDetector = aimDetector;
