@@ -17,10 +17,13 @@ public sealed class AimDetector
         using var greenMask = new Mat();
         Cv2.InRange(hsv, new Scalar(60, 80, 80), new Scalar(150, 255, 255), greenMask);
 
+        using var barMask = new Mat();
+        Cv2.InRange(hsv, new Scalar(0, 0, 10), new Scalar(180, 80, 80), barMask);
+
         using var brightMask = new Mat();
         Cv2.InRange(hsv, new Scalar(0, 0, 220), new Scalar(180, 60, 255), brightMask);
 
-        var greenStats = FindHorizontalBounds(greenMask);
+        var greenStats = FindHorizontalBounds(greenMask, minPixels: 10, minWidth: 6);
         var sliderX = FindBrightSliderX(brightMask);
 
         if (!greenStats.HasValue || sliderX < 0)
@@ -28,7 +31,15 @@ public sealed class AimDetector
             return new DetectionResult(false, 0);
         }
 
-        var (left, right, ratio) = greenStats.Value;
+        var green = greenStats.Value;
+        var barBounds = FindBarBounds(barMask, green.left, green.right);
+
+        if (!barBounds.HasValue || sliderX < barBounds.Value.left || sliderX > barBounds.Value.right)
+        {
+            return new DetectionResult(false, 0);
+        }
+
+        var (left, right, ratio) = green;
         var inZone = sliderX >= left && sliderX <= right;
 
         var zoneCenter = (left + right) / 2.0;
@@ -40,22 +51,20 @@ public sealed class AimDetector
         return new DetectionResult(inZone, confidence, sliderX);
     }
 
-    private static (int left, int right, double ratio)? FindHorizontalBounds(Mat mask)
+    private static (int left, int right, double ratio)? FindHorizontalBounds(Mat mask, int minPixels, int minWidth)
     {
-        var total = mask.Rows * mask.Cols;
-        if (total <= 0)
+        if (mask.Empty())
         {
             return null;
         }
 
-        var greenPixels = Cv2.CountNonZero(mask);
-        if (greenPixels < 10)
+        var pixels = Cv2.CountNonZero(mask);
+        if (pixels < minPixels)
         {
             return null;
         }
 
         var left = -1;
-        var right = -1;
         for (var x = 0; x < mask.Cols; x++)
         {
             using var col = mask.Col(x);
@@ -68,6 +77,7 @@ public sealed class AimDetector
             break;
         }
 
+        var right = -1;
         for (var x = mask.Cols - 1; x >= 0; x--)
         {
             using var col = mask.Col(x);
@@ -80,12 +90,39 @@ public sealed class AimDetector
             break;
         }
 
-        if (left < 0 || right <= left)
+        if (left < 0 || right <= left || (right - left + 1) < minWidth)
         {
             return null;
         }
 
-        return (left, right, greenPixels / (double)total);
+        return (left, right, pixels / (double)(mask.Rows * mask.Cols));
+    }
+
+    private static (int left, int right)? FindBarBounds(Mat barMask, int greenLeft, int greenRight)
+    {
+        var left = -1;
+        for (var x = 0; x < greenLeft; x++)
+        {
+            using var col = barMask.Col(x);
+            if (Cv2.CountNonZero(col) > 0)
+            {
+                left = x;
+                break;
+            }
+        }
+
+        var right = -1;
+        for (var x = barMask.Cols - 1; x > greenRight; x--)
+        {
+            using var col = barMask.Col(x);
+            if (Cv2.CountNonZero(col) > 0)
+            {
+                right = x;
+                break;
+            }
+        }
+
+        return left >= 0 && right > greenRight ? (left, right) : null;
     }
 
     private static int FindBrightSliderX(Mat brightMask)

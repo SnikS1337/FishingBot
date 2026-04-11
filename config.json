@@ -30,6 +30,12 @@
     "biteThreshold": 0.75,
     "biteConfirmFrames": 2,
     "catchMenuThreshold": 0.80,
-    "catchMenuConfirmFrames": 2
+    "catchMenuConfirmFrames": 2,
+    "aimMinZonePixels": 10,
+    "aimMinMarkerPixels": 2,
+    "tensionSampleBandHeightRatio": 0.35,
+    "tensionRedRatioThreshold": 0.02,
+    "fightVisibleRatioThreshold": 0.03,
+    "fightMarkerBrightnessThreshold": 225
   }
 }

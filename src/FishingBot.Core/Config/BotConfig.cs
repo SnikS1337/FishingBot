@@ -60,4 +60,10 @@ public sealed class DetectionConfig
     public int BiteConfirmFrames { get; set; } = 2;
     public double CatchMenuThreshold { get; set; } = 0.80;
     public int CatchMenuConfirmFrames { get; set; } = 2;
+    public int AimMinZonePixels { get; set; } = 10;
+    public int AimMinMarkerPixels { get; set; } = 2;
+    public double TensionSampleBandHeightRatio { get; set; } = 0.35;
+    public double TensionRedRatioThreshold { get; set; } = 0.02;
+    public double FightVisibleRatioThreshold { get; set; } = 0.03;
+    public int FightMarkerBrightnessThreshold { get; set; } = 225;
 }

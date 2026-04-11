@@ -18,6 +18,12 @@ public class ConfigServiceTests
         // Assert
         Assert.NotNull(config);
         Assert.Equal("RELEASE", config.Fishing.Action);
+        Assert.Equal(10, config.Detection.AimMinZonePixels);
+        Assert.Equal(2, config.Detection.AimMinMarkerPixels);
+        Assert.Equal(0.35, config.Detection.TensionSampleBandHeightRatio, 3);
+        Assert.Equal(0.02, config.Detection.TensionRedRatioThreshold, 3);
+        Assert.Equal(0.03, config.Detection.FightVisibleRatioThreshold, 3);
+        Assert.Equal(225, config.Detection.FightMarkerBrightnessThreshold);
     }
 
     [Fact]
@@ -33,6 +39,15 @@ public class ConfigServiceTests
                 Action = "TAKE",
                 AutoRecast = true,
                 RecastDelayMs = [1500, 2500]
+            },
+            Detection = new DetectionConfig
+            {
+                AimMinZonePixels = 18,
+                AimMinMarkerPixels = 4,
+                TensionSampleBandHeightRatio = 0.40,
+                TensionRedRatioThreshold = 0.05,
+                FightVisibleRatioThreshold = 0.08,
+                FightMarkerBrightnessThreshold = 235
             },
             Regions = new RegionsConfig
             {
@@ -50,5 +65,11 @@ public class ConfigServiceTests
         Assert.Equal(1500, actual.Fishing.RecastDelayMs[0]);
         Assert.Equal(2500, actual.Fishing.RecastDelayMs[1]);
         Assert.Equal(0.02, actual.Regions.StartPrompt.X, 3);
+        Assert.Equal(18, actual.Detection.AimMinZonePixels);
+        Assert.Equal(4, actual.Detection.AimMinMarkerPixels);
+        Assert.Equal(0.40, actual.Detection.TensionSampleBandHeightRatio, 3);
+        Assert.Equal(0.05, actual.Detection.TensionRedRatioThreshold, 3);
+        Assert.Equal(0.08, actual.Detection.FightVisibleRatioThreshold, 3);
+        Assert.Equal(235, actual.Detection.FightMarkerBrightnessThreshold);
     }
 }
