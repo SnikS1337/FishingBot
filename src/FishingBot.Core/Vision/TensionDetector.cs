@@ -4,9 +4,11 @@ namespace FishingBot.Core.Vision;
 
 public sealed class TensionDetector
 {
+    private const double MinimumLocalizedRedAreaRatio = 0.03;
+
     public DetectionResult Detect(Mat frame)
     {
-        if (frame.Empty())
+        if (frame is null || frame.Empty())
         {
             return new DetectionResult(false, 0);
         }
@@ -32,11 +34,26 @@ public sealed class TensionDetector
             return new DetectionResult(false, 0);
         }
 
-        var redPixels = Cv2.CountNonZero(redMask);
-        var redRatio = redPixels / (double)totalPixels;
+        Cv2.FindContours(
+            redMask,
+            out var contours,
+            out _,
+            RetrievalModes.External,
+            ContourApproximationModes.ApproxSimple);
 
-        var isRed = redRatio > 0.02;
-        var confidence = Math.Clamp(redRatio * 10.0, 0.0, 1.0);
+        var largestContourArea = 0.0;
+        foreach (var contour in contours)
+        {
+            var contourArea = Cv2.ContourArea(contour);
+            if (contourArea > largestContourArea)
+            {
+                largestContourArea = contourArea;
+            }
+        }
+
+        var localizedRedAreaRatio = largestContourArea / totalPixels;
+        var isRed = localizedRedAreaRatio >= MinimumLocalizedRedAreaRatio;
+        var confidence = Math.Clamp(localizedRedAreaRatio / MinimumLocalizedRedAreaRatio, 0.0, 1.0);
         return new DetectionResult(isRed, confidence);
     }
 }
