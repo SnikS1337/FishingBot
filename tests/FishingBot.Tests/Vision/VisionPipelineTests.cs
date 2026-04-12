@@ -68,12 +68,16 @@ public class VisionPipelineTests
 
         // Assert
         Assert.True(snapshot.StartPromptDetected);
+        Assert.Equal(start.Confidence, snapshot.StartPromptPrimaryConfidence, precision: 6);
+        Assert.Equal(startAlt.Confidence, snapshot.StartPromptAltConfidence, precision: 6);
         Assert.Equal(Math.Max(start.Confidence, startAlt.Confidence), snapshot.StartPromptConfidence, precision: 6);
         Assert.Equal(aim.IsDetected, snapshot.AimAligned);
         Assert.Equal(aim.Confidence, snapshot.AimConfidence, precision: 6);
+        Assert.Equal(aim.MarkerX, snapshot.AimMarkerX);
         Assert.Equal(bite.IsDetected, snapshot.BiteDetected);
         Assert.Equal(bite.Confidence, snapshot.BiteConfidence, precision: 6);
         Assert.Equal(fight.IsDetected, snapshot.FightDetected);
+        Assert.Equal(fight.Confidence, snapshot.FightConfidence, precision: 6);
         Assert.Equal(fight.MarkerX, snapshot.FightMarkerX);
         Assert.Equal(menu.IsDetected, snapshot.CatchMenuDetected);
         Assert.Equal(menu.Confidence, snapshot.CatchMenuConfidence, precision: 6);
@@ -91,11 +95,15 @@ public class VisionPipelineTests
         using var catchMenuRoi = new Mat(120, 200, MatType.CV_8UC3, new Scalar(240, 240, 240));
 
         var startDetector = new StartPromptDetector();
+        var aimDetector = new AimDetector();
         var start = startDetector.Detect(startPromptRoi);
+        var startAlt = startDetector.Detect(startPromptAltRoi);
+        var aim = aimDetector.Detect(aimRoi);
         Assert.InRange(start.Confidence, 0.01, 0.99);
 
-        var threshold = Math.Min(1.0, start.Confidence + 0.05);
+        var threshold = Math.Min(1.0, Math.Max(start.Confidence, startAlt.Confidence) + 0.05);
         Assert.True(threshold > start.Confidence);
+        Assert.True(threshold > startAlt.Confidence);
 
         var pipeline = new VisionPipeline(
             startDetector,
@@ -116,11 +124,15 @@ public class VisionPipelineTests
 
         // Assert
         Assert.False(snapshot.StartPromptDetected);
-        Assert.Equal(start.Confidence, snapshot.StartPromptConfidence, precision: 6);
+        Assert.Equal(start.Confidence, snapshot.StartPromptPrimaryConfidence, precision: 6);
+        Assert.Equal(startAlt.Confidence, snapshot.StartPromptAltConfidence, precision: 6);
+        Assert.Equal(Math.Max(start.Confidence, startAlt.Confidence), snapshot.StartPromptConfidence, precision: 6);
         Assert.False(snapshot.AimAligned);
+        Assert.Equal(aim.MarkerX, snapshot.AimMarkerX);
         Assert.False(snapshot.BiteDetected);
         Assert.Equal(0, snapshot.BiteConfidence);
         Assert.False(snapshot.FightDetected);
+        Assert.Equal(0, snapshot.FightConfidence);
         Assert.Equal(-1, snapshot.FightMarkerX);
         Assert.False(snapshot.CatchMenuDetected);
         Assert.Equal(0, snapshot.CatchMenuConfidence);

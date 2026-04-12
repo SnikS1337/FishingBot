@@ -35,12 +35,16 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     private string _statusText = "Ready";
     private string _currentState = FishingState.WaitStartPrompt.ToString();
     private bool _startPromptDetected;
+    private double _startPromptPrimaryConfidence;
+    private double _startPromptAltConfidence;
     private double _startPromptConfidence;
     private bool _biteDetected;
     private double _biteConfidence;
     private bool _aimAligned;
+    private int _aimMarkerX = -1;
     private double _aimConfidence;
     private bool _fightDetected;
+    private double _fightConfidence;
     private int _fightMarkerX = -1;
     private bool _catchMenuDetected;
     private double _catchMenuConfidence;
@@ -136,6 +140,36 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         private set => SetProperty(ref _startPromptConfidence, value);
     }
 
+    public double StartPromptPrimaryConfidence
+    {
+        get => _startPromptPrimaryConfidence;
+        private set => SetProperty(ref _startPromptPrimaryConfidence, value);
+    }
+
+    public double StartPromptAltConfidence
+    {
+        get => _startPromptAltConfidence;
+        private set => SetProperty(ref _startPromptAltConfidence, value);
+    }
+
+    public string StartPromptSource
+    {
+        get
+        {
+            if (StartPromptAltConfidence > StartPromptPrimaryConfidence)
+            {
+                return "ALT";
+            }
+
+            if (StartPromptPrimaryConfidence > 0)
+            {
+                return "MAIN";
+            }
+
+            return "-";
+        }
+    }
+
     public bool BiteDetected
     {
         get => _biteDetected;
@@ -154,6 +188,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
         private set => SetProperty(ref _aimConfidence, value);
     }
 
+    public int AimMarkerX
+    {
+        get => _aimMarkerX;
+        private set => SetProperty(ref _aimMarkerX, value);
+    }
+
     public double BiteConfidence
     {
         get => _biteConfidence;
@@ -164,6 +204,12 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
     {
         get => _fightDetected;
         private set => SetProperty(ref _fightDetected, value);
+    }
+
+    public double FightConfidence
+    {
+        get => _fightConfidence;
+        private set => SetProperty(ref _fightConfidence, value);
     }
 
     public int FightMarkerX
@@ -505,12 +551,17 @@ public sealed class MainViewModel : INotifyPropertyChanged, IDisposable
             _lastSnapshotUtc = now;
 
             StartPromptDetected = snapshot.StartPromptDetected;
+            StartPromptPrimaryConfidence = Math.Round(snapshot.StartPromptPrimaryConfidence, 3);
+            StartPromptAltConfidence = Math.Round(snapshot.StartPromptAltConfidence, 3);
             StartPromptConfidence = Math.Round(snapshot.StartPromptConfidence, 3);
+            OnPropertyChanged(nameof(StartPromptSource));
             BiteDetected = snapshot.BiteDetected;
             BiteConfidence = Math.Round(snapshot.BiteConfidence, 3);
             AimAligned = snapshot.AimAligned;
+            AimMarkerX = snapshot.AimMarkerX;
             AimConfidence = Math.Round(snapshot.AimConfidence, 3);
             FightDetected = snapshot.FightDetected;
+            FightConfidence = Math.Round(snapshot.FightConfidence, 3);
             FightMarkerX = snapshot.FightMarkerX;
             CatchMenuDetected = snapshot.CatchMenuDetected;
             CatchMenuConfidence = Math.Round(snapshot.CatchMenuConfidence, 3);

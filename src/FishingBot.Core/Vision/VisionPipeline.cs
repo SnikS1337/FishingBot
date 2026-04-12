@@ -56,12 +56,16 @@ public sealed class VisionPipeline : IVisionPipeline
 
         return new VisionSnapshot(
             StartPromptDetected: startDetected,
+            StartPromptPrimaryConfidence: start.Confidence,
+            StartPromptAltConfidence: startAlt.Confidence,
             StartPromptConfidence: startConfidence,
             AimAligned: aim.IsDetected,
+            AimMarkerX: aim.MarkerX,
             AimConfidence: aim.Confidence,
             BiteDetected: bite.IsDetected,
             BiteConfidence: bite.Confidence,
             FightDetected: fight.IsDetected,
+            FightConfidence: fight.IsDetected ? fight.Confidence : 0.0,
             FightMarkerX: fight.MarkerX,
             CatchMenuDetected: menu.IsDetected,
             CatchMenuConfidence: menu.Confidence);

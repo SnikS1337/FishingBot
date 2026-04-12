@@ -6,6 +6,7 @@ public sealed class BotConfig
     public FishingConfig Fishing { get; set; } = new();
     public HotkeysConfig Hotkeys { get; set; } = new();
     public TimingConfig Timing { get; set; } = new();
+    public TelemetryConfig Telemetry { get; set; } = new();
     public RegionsConfig Regions { get; set; } = new();
     public DetectionConfig Detection { get; set; } = new();
 }
@@ -36,6 +37,11 @@ public sealed class TimingConfig
     public int FightCheckIntervalMs { get; set; } = 50;
     public int ActionDelayMin { get; set; } = 80;
     public int ActionDelayMax { get; set; } = 200;
+}
+
+public sealed class TelemetryConfig
+{
+    public int DetectOnlyLogIntervalMs { get; set; } = 1500;
 }
 
 public sealed class RegionsConfig

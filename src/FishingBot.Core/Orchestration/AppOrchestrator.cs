@@ -34,6 +34,7 @@ public sealed class AppOrchestrator : IDisposable
     private int _lastFightDirection;
     private int _startPromptSeenFrames;
     private DateTimeOffset _secondPressReadyUtc;
+    private DateTimeOffset _lastDetectOnlyTelemetryLogUtc;
 
     public AppOrchestrator(
         ICaptureEngine captureEngine,
@@ -59,6 +60,7 @@ public sealed class AppOrchestrator : IDisposable
         _lastFightDirection = 0;
         _startPromptSeenFrames = 0;
         _secondPressReadyUtc = default;
+        _lastDetectOnlyTelemetryLogUtc = default;
     }
 
     public event Action<FishingState>? StateChanged;
@@ -140,6 +142,7 @@ public sealed class AppOrchestrator : IDisposable
             _lastFightDirection = 0;
             _startPromptSeenFrames = 0;
             _secondPressReadyUtc = default;
+            _lastDetectOnlyTelemetryLogUtc = default;
 
             _cts = new CancellationTokenSource();
             _loopTask = Task.Run(() => RunLoopAsync(_cts.Token), _cts.Token);
@@ -196,6 +199,7 @@ public sealed class AppOrchestrator : IDisposable
 
             CheckStateTimeout();
             ProcessVisionEvents(snapshot);
+            EmitDetectOnlyTelemetry(snapshot);
             ExecuteStateActions(snapshot);
         }
     }
@@ -484,6 +488,35 @@ public sealed class AppOrchestrator : IDisposable
     private void Log(string level, string evt, string message)
         => _logSink.Write(new LogEntry(DateTimeOffset.UtcNow, level, evt, message));
 
+    private void EmitDetectOnlyTelemetry(VisionSnapshot snapshot)
+    {
+        if (_isActiveMode)
+        {
+            return;
+        }
+
+        var intervalMs = Math.Max(250, _config.Telemetry.DetectOnlyLogIntervalMs);
+        var now = DateTimeOffset.UtcNow;
+        if (_lastDetectOnlyTelemetryLogUtc != default
+            && (now - _lastDetectOnlyTelemetryLogUtc).TotalMilliseconds < intervalMs)
+        {
+            return;
+        }
+
+        _lastDetectOnlyTelemetryLogUtc = now;
+        Log("INFO", "DETECT_TELEMETRY", BuildDetectOnlyTelemetrySummary(snapshot));
+    }
+
+    private string BuildDetectOnlyTelemetrySummary(VisionSnapshot snapshot)
+    {
+        var source = ResolveStartPromptSource(snapshot, "alt", "main", "-");
+        var startFrames = $"{Math.Min(_startPromptSeenFrames, Math.Max(1, _config.Detection.StartPromptConfirmFrames))}/{Math.Max(1, _config.Detection.StartPromptConfirmFrames)}";
+        var aimMarker = snapshot.AimMarkerX >= 0 ? snapshot.AimMarkerX.ToString() : "-";
+        var fightMarker = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
+
+        return $"state={_fsm.Current} start={snapshot.StartPromptDetected} best={snapshot.StartPromptConfidence:F3} src={source} main={snapshot.StartPromptPrimaryConfidence:F3} alt={snapshot.StartPromptAltConfidence:F3} frames={startFrames} aim={snapshot.AimAligned}/{snapshot.AimConfidence:F3}@{aimMarker} bite={snapshot.BiteDetected}/{snapshot.BiteConfidence:F3} fight={snapshot.FightDetected}/{snapshot.FightConfidence:F3}@{fightMarker} menu={snapshot.CatchMenuDetected}/{snapshot.CatchMenuConfidence:F3}";
+    }
+
     private void PublishPreviewFrame(Mat sourceFrame, VisionSnapshot snapshot)
     {
         if (PreviewFrameUpdated is null) return;
@@ -504,10 +537,30 @@ public sealed class AppOrchestrator : IDisposable
         DrawRegion(frame, _config.Regions.FightBar,       Scalar.Yellow,     "FightBar");
         DrawRegion(frame, _config.Regions.CatchMenu,      Scalar.LightGreen, "CatchMenu");
 
-        var markerText = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
-        var status = $"State:{_fsm.Current} Start:{snapshot.StartPromptDetected} Aim:{snapshot.AimAligned}({snapshot.AimConfidence:F2}) Bite:{snapshot.BiteDetected}({snapshot.BiteConfidence:F2}) Fight:{snapshot.FightDetected} Marker:{markerText} Menu:{snapshot.CatchMenuDetected}";
-        Cv2.PutText(frame, status, new OpenCvSharp.Point(20, 30),
+        var startSource = ResolveStartPromptSource(snapshot, "Alt", "Main", "-");
+        var aimMarker = snapshot.AimMarkerX >= 0 ? snapshot.AimMarkerX.ToString() : "-";
+        var fightMarker = snapshot.FightMarkerX >= 0 ? snapshot.FightMarkerX.ToString() : "-";
+        var statusLine1 = $"State:{_fsm.Current} Start:{snapshot.StartPromptDetected}({snapshot.StartPromptConfidence:F2}) Src:{startSource} Aim:{snapshot.AimAligned}({snapshot.AimConfidence:F2})@{aimMarker}";
+        var statusLine2 = $"Bite:{snapshot.BiteDetected}({snapshot.BiteConfidence:F2}) Fight:{snapshot.FightDetected}({snapshot.FightConfidence:F2})@{fightMarker} Menu:{snapshot.CatchMenuDetected}({snapshot.CatchMenuConfidence:F2})";
+        Cv2.PutText(frame, statusLine1, new OpenCvSharp.Point(20, 30),
             HersheyFonts.HersheySimplex, 0.65, Scalar.Lime, 2, LineTypes.AntiAlias);
+        Cv2.PutText(frame, statusLine2, new OpenCvSharp.Point(20, 58),
+            HersheyFonts.HersheySimplex, 0.65, Scalar.Lime, 2, LineTypes.AntiAlias);
+    }
+
+    private static string ResolveStartPromptSource(VisionSnapshot snapshot, string altLabel, string mainLabel, string noneLabel)
+    {
+        if (snapshot.StartPromptAltConfidence > snapshot.StartPromptPrimaryConfidence)
+        {
+            return altLabel;
+        }
+
+        if (snapshot.StartPromptPrimaryConfidence > 0)
+        {
+            return mainLabel;
+        }
+
+        return noneLabel;
     }
 
     private void DrawRegion(Mat frame, NormalizedRect region, Scalar color, string label)

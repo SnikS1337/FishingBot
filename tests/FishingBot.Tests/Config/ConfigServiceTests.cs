@@ -24,6 +24,7 @@ public class ConfigServiceTests
         Assert.Equal(0.02, config.Detection.TensionRedRatioThreshold, 3);
         Assert.Equal(0.03, config.Detection.FightVisibleRatioThreshold, 3);
         Assert.Equal(225, config.Detection.FightMarkerBrightnessThreshold);
+        Assert.Equal(1500, config.Telemetry.DetectOnlyLogIntervalMs);
     }
 
     [Fact]
@@ -49,6 +50,10 @@ public class ConfigServiceTests
                 FightVisibleRatioThreshold = 0.08,
                 FightMarkerBrightnessThreshold = 235
             },
+            Telemetry = new TelemetryConfig
+            {
+                DetectOnlyLogIntervalMs = 2200
+            },
             Regions = new RegionsConfig
             {
                 StartPrompt = new NormalizedRect(0.02, 0.03, 0.30, 0.10)
@@ -71,5 +76,6 @@ public class ConfigServiceTests
         Assert.Equal(0.05, actual.Detection.TensionRedRatioThreshold, 3);
         Assert.Equal(0.08, actual.Detection.FightVisibleRatioThreshold, 3);
         Assert.Equal(235, actual.Detection.FightMarkerBrightnessThreshold);
+        Assert.Equal(2200, actual.Telemetry.DetectOnlyLogIntervalMs);
     }
 }

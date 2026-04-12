@@ -552,6 +552,110 @@
                                         </Ellipse>
                                     </Grid>
                                 </StackPanel>
+                             </Border>
+
+                            <Border Background="{StaticResource BgCardBrush}"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="КАЛИБРОВКА"
+                                               Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Margin="0,0,0,8"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Старт"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="11"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="11"
+                                                   Text="{Binding StartPromptConfidence, StringFormat=best {0:F3}}"/>
+                                    </Grid>
+                                    <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               Margin="0,0,0,6"
+                                               Text="{Binding StartPromptSource, StringFormat=src {0}}"/>
+                                    <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               Margin="0,0,0,8"
+                                               Text="{Binding StartPromptPrimaryConfidence, StringFormat=main {0:F3}}">
+                                    </TextBlock>
+                                    <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               Margin="0,0,0,8"
+                                               Text="{Binding StartPromptAltConfidence, StringFormat=alt {0:F3}}"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Прицел"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="11"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="11"
+                                                   Text="{Binding AimConfidence, StringFormat=conf {0:F3}}"/>
+                                    </Grid>
+                                    <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               Margin="0,0,0,8"
+                                               Text="{Binding AimMarkerX, StringFormat=marker {0}}"/>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Натяжение"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="11"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="11"
+                                                   Text="{Binding BiteConfidence, StringFormat=conf {0:F3}}"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Борьба"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="11"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="11"
+                                                   Text="{Binding FightConfidence, StringFormat=conf {0:F3}}"/>
+                                    </Grid>
+                                    <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                                               FontSize="10"
+                                               Margin="0,0,0,8"
+                                               Text="{Binding FightMarkerX, StringFormat=marker {0}}"/>
+
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Меню"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   FontSize="11"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Foreground="{StaticResource TextSecondaryBrush}"
+                                                   FontSize="11"
+                                                   Text="{Binding CatchMenuConfidence, StringFormat=conf {0:F3}}"/>
+                                    </Grid>
+                                </StackPanel>
                             </Border>
 
                             <!-- Divider -->

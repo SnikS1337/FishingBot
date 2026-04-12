@@ -16,6 +16,9 @@
     "actionDelayMin": 80,
     "actionDelayMax": 200
   },
+  "telemetry": {
+    "detectOnlyLogIntervalMs": 1500
+  },
   "regions": {
     "startPrompt":    { "x": 0.78,  "y": 0.90,  "w": 0.21,  "h": 0.08  },
     "startPromptAlt": { "x": 0.01,  "y": 0.01,  "w": 0.32,  "h": 0.045 },
